@@ -6,7 +6,7 @@ export const config = Ef.gen(function* () {
     jwtExpire: yield* Config.string("JWT_EXPIRE").pipe(
       Config.withDefault("7d"),
     ),
-    secretCode: yield* Config.string("SECRET_CODE"),
+    // secretCode: yield* Config.string("SECRET_CODE"),
     salt: yield* Config.string("SALT").pipe(
       Config.withDefault("D;%yL9TS:5PalS/d"),
     ),

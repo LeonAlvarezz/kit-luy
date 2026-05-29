@@ -6,6 +6,7 @@ export const ErrorCode = {
   NotFound: "NOT_FOUND",
   Conflict: "CONFLICT",
   DbError: "DB_ERROR",
+  BadRequest: "BAD_REQUEST",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -70,6 +71,21 @@ export class ConflictError extends Schema.TaggedError<ConflictError>()(
     super({
       message: props.message ?? "Conflict",
       code: props.code ? props.code : ErrorCode.Conflict,
+    });
+  }
+}
+
+export class BadRequestError extends Schema.TaggedError<BadRequestError>()(
+  "BadRequestError",
+  {
+    message: Schema.String,
+    code: Schema.optional(Schema.Enums(ErrorCode)),
+  },
+) {
+  constructor(props: { message?: string; code?: ErrorCode }) {
+    super({
+      message: props.message ?? "Bad Request",
+      code: props.code ? props.code : ErrorCode.BadRequest,
     });
   }
 }

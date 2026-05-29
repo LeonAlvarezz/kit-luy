@@ -3,4 +3,12 @@
   "name": "hono-template",
   "main": "src/index.ts",
   "compatibility_date": "2026-05-14",
+  "d1_databases": [
+    {
+      "binding": "D1_DB",
+      "database_name": "kit-luy-prod",
+      "database_id": "e8e2ef17-1cda-4c46-8c76-3a48c19914a1",
+      "migrations_dir": "drizzle",
+    },
+  ],
 }
