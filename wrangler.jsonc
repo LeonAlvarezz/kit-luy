@@ -3,6 +3,9 @@
   "name": "hono-template",
   "main": "src/index.ts",
   "compatibility_date": "2026-05-14",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "d1_databases": [
     {
       "binding": "D1_DB",

@@ -2,7 +2,7 @@ import { Config, ConfigProvider, Effect as Ef } from "effect";
 
 export const config = Ef.gen(function* () {
   return {
-    port: yield* Config.number("PORT").pipe(Config.withDefault(5000)),
+    port: yield* Config.number("PORT").pipe(Config.withDefault(4000)),
     jwtExpire: yield* Config.string("JWT_EXPIRE").pipe(
       Config.withDefault("7d"),
     ),

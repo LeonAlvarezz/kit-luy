@@ -4,6 +4,8 @@ import { makeDrizzleLayer } from "@/lib/db";
 
 export type Bindings = Record<string, string | undefined> & {
   D1_DB: D1Database;
+  NGROK_URL?: string;
+  TELEGRAM_BOT_TOKEN?: string;
 };
 
 export class WorkerEnv extends Context.Tag("WorkerEnv")<

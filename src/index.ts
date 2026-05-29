@@ -1,8 +1,4 @@
-import {
-  HttpApiBuilder,
-  HttpApiScalar,
-  HttpServer,
-} from "@effect/platform";
+import { HttpApiBuilder, HttpApiScalar, HttpServer } from "@effect/platform";
 import { Effect as Ef, Layer } from "effect";
 
 import { withResponseEnvelope } from "@/core/middleware/response-envelope";
@@ -14,18 +10,73 @@ import {
   DrizzleFromWorkerEnvLive,
   makeWorkerEnvLayer,
 } from "@/http/worker-env";
+import {
+  TelegramService,
+  TelegramServiceLive,
+} from "@/modules/telegram/telegram.service";
 import { LoggerLive } from "./lib/logger";
 
 const handlersByEnv = new WeakMap<
   Bindings,
   ReturnType<typeof HttpApiBuilder.toWebHandler>
 >();
+const telegramWebhookStartupByEnv = new WeakMap<Bindings, Promise<void>>();
+
+const getTelegramWebhookUrl = (env: Bindings) => {
+  const baseUrl = env.NGROK_URL?.trim().replace(/\/+$/, "");
+  const token = env.TELEGRAM_BOT_TOKEN?.trim();
+
+  if (!baseUrl || !token) {
+    return undefined;
+  }
+
+  return `${baseUrl}/telegram/webhook/${token}`;
+};
 
 const startup = Ef.gen(function* () {
   const { port } = yield* config;
 
   yield* Ef.log(`server is running at http://localhost:${port}`);
 }).pipe(Ef.annotateLogs({ file: "app.ts" }));
+
+const setupTelegramWebhookOnStartup = (env: Bindings) =>
+  Ef.gen(function* () {
+    const webhookUrl = getTelegramWebhookUrl(env);
+    console.log({ webhookUrl });
+
+    if (!webhookUrl) {
+      yield* Ef.log(
+        "telegram webhook setup skipped: NGROK_URL or TELEGRAM_BOT_TOKEN is missing",
+      );
+      return;
+    }
+
+    const service = yield* TelegramService;
+
+    yield* service.setWebhook(webhookUrl);
+    yield* Ef.log("telegram webhook registered");
+  }).pipe(
+    Ef.catchAll((err) =>
+      Ef.logError(`telegram webhook setup failed: ${err.message}`),
+    ),
+    Ef.provide(TelegramServiceLive),
+    Ef.provide(makeWorkerEnvLayer(env)),
+    Ef.provide(LoggerLive),
+    Ef.annotateLogs({ file: "app.ts" }),
+  );
+
+const ensureTelegramWebhookStarted = (env: Bindings, ctx: ExecutionContext) => {
+  const existing = telegramWebhookStartupByEnv.get(env);
+
+  if (existing) {
+    ctx.waitUntil(existing);
+    return;
+  }
+
+  const setup = Ef.runPromise(setupTelegramWebhookOnStartup(env));
+  telegramWebhookStartupByEnv.set(env, setup);
+  ctx.waitUntil(setup);
+};
 
 const makeHandler = (env: Bindings) => {
   const cached = handlersByEnv.get(env);
@@ -61,6 +112,8 @@ export default {
         Ef.withConfigProvider(configProviderFromEnv(env)),
       ),
     );
+
+    ensureTelegramWebhookStarted(env, ctx);
 
     return makeHandler(env)(request);
   },
