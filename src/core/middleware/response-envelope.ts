@@ -89,8 +89,24 @@ const errorBody = (
   };
 };
 
+const responseEnvelopeExcludedPaths = new Set(["/docs", "/openapi.json"]);
+
+const getPathname = (url: string) => {
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    return new URL(url).pathname;
+  }
+
+  return url.split("?")[0] ?? url;
+};
+
 export const withResponseEnvelope = (app: HttpApp.Default) =>
-  HttpApp.withPreResponseHandler(app, (_request, response) => {
+  HttpApp.withPreResponseHandler(app, (request, response) => {
+    const pathname = getPathname(request.url);
+
+    if (responseEnvelopeExcludedPaths.has(pathname)) {
+      return Effect.succeed(response);
+    }
+
     const payload = parseBody(response);
 
     if (response.status >= 200 && response.status < 300) {

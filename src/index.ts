@@ -1,4 +1,8 @@
-import { HttpApiBuilder, HttpServer } from "@effect/platform";
+import {
+  HttpApiBuilder,
+  HttpApiScalar,
+  HttpServer,
+} from "@effect/platform";
 import { Effect as Ef, Layer } from "effect";
 
 import { withResponseEnvelope } from "@/core/middleware/response-envelope";
@@ -29,7 +33,12 @@ const makeHandler = (env: Bindings) => {
     return cached.handler;
   }
 
-  const ApiLive = HttpApiBuilder.api(AppApi).pipe(Layer.provide(RoutesLive));
+  const AppApiLive = HttpApiBuilder.api(AppApi).pipe(Layer.provide(RoutesLive));
+  const DocsLive = Layer.mergeAll(
+    HttpApiBuilder.middlewareOpenApi({ path: "/openapi.json" }),
+    HttpApiScalar.layer({ path: "/docs" }),
+  ).pipe(Layer.provide(AppApiLive));
+  const ApiLive = Layer.mergeAll(AppApiLive, DocsLive);
 
   const AppLive = Layer.mergeAll(ApiLive, HttpServer.layerContext).pipe(
     Layer.provide(DrizzleFromWorkerEnvLive),
