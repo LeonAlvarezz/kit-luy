@@ -22,4 +22,13 @@ export const MemberRoute = HttpApiGroup.make("members")
       .annotate(OpenApi.Summary, "Create Member")
       .annotate(OpenApi.Description, "Creates a new member record."),
   )
+  .add(
+    HttpApiEndpoint.del("deleteMemberById", "/:id")
+      .setPath(Schema.Struct({ id: Schema.NumberFromString }))
+      .addSuccess(MemberModel.EntitySchema)
+      .addError(InternalServerError)
+      .addError(BadRequestError)
+      .annotate(OpenApi.Summary, "Delete Member")
+      .annotate(OpenApi.Description, "Delete member record by ID"),
+  )
   .prefix("/members");

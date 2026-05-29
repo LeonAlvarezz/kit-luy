@@ -13,7 +13,18 @@ export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
 
 export class DbError extends Data.TaggedError("DbError")<{
   error: unknown;
-}> {}
+  message: string;
+}> {
+  constructor(props: { error: unknown }) {
+    super({
+      error: props.error,
+      message:
+        props.error instanceof Error
+          ? props.error.message
+          : String(props.error),
+    });
+  }
+}
 
 export class InternalServerError extends Schema.TaggedError<InternalServerError>()(
   "InternalServerError",

@@ -60,6 +60,7 @@ const setupTelegramWebhookOnStartup = (env: Bindings) =>
       Ef.logError(`telegram webhook setup failed: ${err.message}`),
     ),
     Ef.provide(TelegramServiceLive),
+    Ef.provide(DrizzleFromWorkerEnvLive),
     Ef.provide(makeWorkerEnvLayer(env)),
     Ef.provide(LoggerLive),
     Ef.annotateLogs({ file: "app.ts" }),

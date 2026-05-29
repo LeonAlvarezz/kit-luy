@@ -1,18 +1,18 @@
+import { InternalServerError } from "@/core/error";
 import { AppApi } from "@/http/api";
 import { HttpApiBuilder } from "@effect/platform";
 import { Effect, Layer } from "effect";
-import { MemberService, MemberServiceLive } from "./member.service";
-import { InternalServerError } from "@/core/error";
+import { GroupService, GroupServiceLive } from "./group.service";
 
-export const MemberControllerLive = HttpApiBuilder.group(
+export const GroupControllerLive = HttpApiBuilder.group(
   AppApi,
-  "members",
+  "groups",
   (handlers) =>
     handlers
-      .handle("findAllMembers", () =>
+      .handle("findAllGroups", () =>
         Effect.gen(function* () {
-          const srv = yield* MemberService;
-          return yield* srv.findAllMembers().pipe(
+          const srv = yield* GroupService;
+          return yield* srv.findAllGroups().pipe(
             Effect.catchTags({
               DbError: (error) =>
                 Effect.fail(
@@ -25,10 +25,10 @@ export const MemberControllerLive = HttpApiBuilder.group(
           );
         }),
       )
-      .handle("createMember", ({ payload }) =>
+      .handle("createGroup", ({ payload }) =>
         Effect.gen(function* () {
-          const srv = yield* MemberService;
-          return yield* srv.createMember(payload).pipe(
+          const srv = yield* GroupService;
+          return yield* srv.createGroup(payload).pipe(
             Effect.catchTags({
               DbError: (error) =>
                 Effect.fail(
@@ -41,10 +41,10 @@ export const MemberControllerLive = HttpApiBuilder.group(
           );
         }),
       )
-      .handle("deleteMemberById", ({ path }) =>
+      .handle("deleteGroupById", ({ path }) =>
         Effect.gen(function* () {
-          const srv = yield* MemberService;
-          return yield* srv.deleteMemberById(path.id).pipe(
+          const srv = yield* GroupService;
+          return yield* srv.deleteGroupById(path.id).pipe(
             Effect.catchTags({
               DbError: (error) =>
                 Effect.fail(
@@ -59,6 +59,6 @@ export const MemberControllerLive = HttpApiBuilder.group(
       ),
 );
 
-export const MemberLive = Layer.mergeAll(MemberControllerLive).pipe(
-  Layer.provide(MemberServiceLive),
+export const GroupLive = Layer.mergeAll(GroupControllerLive).pipe(
+  Layer.provide(GroupServiceLive),
 );

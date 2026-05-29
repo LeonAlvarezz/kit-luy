@@ -33,4 +33,22 @@ export namespace MemberModel {
 
   export type Entity = Schema.Schema.Type<typeof EntitySchema>;
   export type Create = Schema.Schema.Type<typeof CreateSchema>;
+  export type UpsertTelegramMember = Create & {
+    tg_user_id: string;
+  };
+  export type RegisterTelegramMember = {
+    group: {
+      tg_chat_id: string;
+      title: string;
+    };
+    member: {
+      tg_user_id: string;
+      display_name: string | null;
+      alias: string | null;
+    };
+  };
+  export type DeactivateTelegramMember = {
+    tg_chat_id: string;
+    tg_user_id: string;
+  };
 }

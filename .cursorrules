@@ -1,0 +1,26 @@
+# Kit Luy - Project Rules & Guidelines
+
+## Tech Stack
+- **Framework**: Effect (Gen, Layer, Schema, Context) for functional TypeScript.
+- **Database**: Drizzle ORM (SQLite / D1).
+- **HTTP Platform**: `@effect/platform` / Hono.
+- **Telegram Bot**: Telegraf.
+
+## Rules & Requirements
+
+### 1. Telegram Group Migration
+- **Behavior**: Always handle standard Telegram group chats upgrading to supergroups.
+- **Update Handling**:
+  - The bot must listen for the `migrate_to_chat_id` and `migrate_from_chat_id` message subtype events.
+  - When either event is received, immediately update the `tg_chat_id` field in the database (`groups` table) from the old chat ID to the new chat ID.
+- **Rationale**: Failure to handle migration results in the bot losing access to the Settlement Group's history/members and causes `Bad Request: group chat was upgraded to a supergroup chat` errors when calling Telegram APIs with the deprecated ID.
+
+### 2. Domain & Ledger
+- **Scope**: One Telegram group chat corresponds to exactly one Settlement Group.
+- **Calculations**: All monetary values are recorded and settled in USD.
+
+### 3. Module Boundaries
+- **Models**: Domain payload/entity types belong in the module's `*.model.ts` file. For example, member registration input types such as `MemberModel.UpsertTelegramMember` and `MemberModel.RegisterTelegramMember` must live in `member.model.ts`, not repository or service files.
+- **Repositories**: Repositories expose database primitives only and should use model-owned types for payloads.
+- **Services**: Services own application use cases and orchestration between repositories. Telegram member registration should be exposed as a member service use case, while Telegram handlers only map Telegram update data and call the service.
+- **Mappers**: Provider-specific normalization, such as Telegram display names and chat titles, should live in mapper/helper files near that provider integration instead of inside the bot handler body.
