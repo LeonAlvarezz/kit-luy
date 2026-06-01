@@ -24,3 +24,7 @@
 - **Repositories**: Repositories expose database primitives only and should use model-owned types for payloads.
 - **Services**: Services own application use cases and orchestration between repositories. Telegram member registration should be exposed as a member service use case, while Telegram handlers only map Telegram update data and call the service.
 - **Mappers**: Provider-specific normalization, such as Telegram display names and chat titles, should live in mapper/helper files near that provider integration instead of inside the bot handler body.
+
+### 4. TypeScript Guidelines
+- **No `any` Assertions**: Under no circumstances should you assert type `any` (e.g., `as any`). DO NOT ever do that. Keep code strictly and safely typed.
+

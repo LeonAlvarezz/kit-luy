@@ -7,6 +7,14 @@ import {
   MemberService,
   MemberServiceLive,
 } from "@/modules/member/member.service";
+import {
+  PurchaseAllocationService,
+  PurchaseAllocationServiceLive,
+} from "@/modules/purchase/purchase-allocation.service";
+import {
+  PurchaseService,
+  PurchaseServiceLive,
+} from "@/modules/purchase/purchase.service";
 import { registerTelegramCommands } from "./commands";
 import { registerTelegramEvents } from "./events";
 import {
@@ -35,6 +43,8 @@ export const TelegramServiceLive = Layer.effect(
     const env = yield* WorkerEnv;
     const groupService = yield* GroupService;
     const memberService = yield* MemberService;
+    const purchaseService = yield* PurchaseService;
+    const purchaseAllocationService = yield* PurchaseAllocationService;
     const token = env.TELEGRAM_BOT_TOKEN;
 
     if (!token) {
@@ -83,7 +93,12 @@ export const TelegramServiceLive = Layer.effect(
       );
     });
 
-    registerTelegramCommands(bot, registerTelegramMember);
+    registerTelegramCommands(bot, registerTelegramMember, {
+      findTelegramMember: memberService.findTelegramMember,
+      findActiveByGroupId: memberService.findActiveByGroupId,
+      createPurchase: purchaseService.create,
+      createPurchaseAllocation: purchaseAllocationService.create,
+    });
 
     registerTelegramEvents(bot, {
       updateTelegramChatId: groupService.updateTelegramChatId,
@@ -109,4 +124,9 @@ export const TelegramServiceLive = Layer.effect(
       setWebhook,
     };
   }),
-).pipe(Layer.provide(GroupServiceLive), Layer.provide(MemberServiceLive));
+).pipe(
+  Layer.provide(GroupServiceLive),
+  Layer.provide(MemberServiceLive),
+  Layer.provide(PurchaseServiceLive),
+  Layer.provide(PurchaseAllocationServiceLive),
+);

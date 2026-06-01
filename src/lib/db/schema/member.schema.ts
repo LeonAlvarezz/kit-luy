@@ -9,6 +9,8 @@ import {
 import { enumToSqliteEnum, simpleTimestamps } from "./common";
 import { groupTable } from "./group.schema";
 import { MEMBER_STATUS } from "@/modules/member/member.model";
+import { purchaseAllocationTable } from "./purchase-allocation.schema";
+import { purchaseTable } from "./purchase.schema";
 
 export const memberTable = sqliteTable(
   "members",
@@ -35,9 +37,18 @@ export const memberTable = sqliteTable(
   ],
 );
 
-export const memberRelations = relations(memberTable, ({ one }) => ({
+export const memberRelations = relations(memberTable, ({ one, many }) => ({
   group: one(groupTable, {
     fields: [memberTable.group_id],
     references: [groupTable.id],
+  }),
+  paid_purchases: many(purchaseTable, {
+    relationName: "payer_member",
+  }),
+  beneficiary_allocations: many(purchaseAllocationTable, {
+    relationName: "beneficiary_member",
+  }),
+  responsible_allocations: many(purchaseAllocationTable, {
+    relationName: "responsible_member",
   }),
 }));

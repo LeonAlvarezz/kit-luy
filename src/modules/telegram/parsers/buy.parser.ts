@@ -24,14 +24,13 @@ export type BuyCommandParseResult =
       readonly message: string;
     };
 
-const buyCommandRegex =
-  /^\/buy(?:@\w+)?\s+((?:\d+(?:\.\d+)?)|(?:\.\d+))(?:\s+(.+))?$/i;
-
-const buyAllocationRegex =
-  /@([a-zA-Z0-9_]{1,32})\s*=\s*((?:\d+(?:\.\d+)?)|(?:\.\d+))/g;
+const regex = {
+  buy: /^\/buy(?:@\w+)?\s+((?:\d+(?:\.\d+)?)|(?:\.\d+))(?:\s+(.+))?$/i,
+  allocation: /@([a-zA-Z0-9_]{1,32})\s*=\s*((?:\d+(?:\.\d+)?)|(?:\.\d+))/g,
+};
 
 export const parseBuyCommand = (text: string): BuyCommandParseResult => {
-  const buyMatch = text.match(buyCommandRegex);
+  const buyMatch = text.match(regex.buy);
 
   if (!buyMatch) {
     return {
@@ -53,7 +52,7 @@ export const parseBuyCommand = (text: string): BuyCommandParseResult => {
     };
   }
 
-  const allocations = [...allocationText.matchAll(buyAllocationRegex)].map(
+  const allocations = [...allocationText.matchAll(regex.allocation)].map(
     (match) => ({
       username: match[1],
       amount: Number(match[2]),
@@ -61,7 +60,7 @@ export const parseBuyCommand = (text: string): BuyCommandParseResult => {
   );
 
   const unmatchedAllocationText = allocationText
-    .replace(buyAllocationRegex, "")
+    .replace(regex.allocation, "")
     .trim();
 
   if (allocations.length === 0 || unmatchedAllocationText) {

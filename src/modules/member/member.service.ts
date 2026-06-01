@@ -13,6 +13,16 @@ export class MemberService extends Context.Tag("MemberService")<
   MemberService,
   {
     findAllMembers: () => Effect.Effect<MemberModel.Entity[], DbError>;
+    findTelegramMember: (payload: {
+      tg_chat_id: string;
+      tg_user_id: string;
+    }) => Effect.Effect<
+      MemberModel.Entity,
+      DbError | TelegramGroupNotFound | TelegramMemberNotFound
+    >;
+    findActiveByGroupId: (
+      group_id: number,
+    ) => Effect.Effect<MemberModel.Entity[], DbError>;
     createMember: (
       payload: MemberModel.Create,
     ) => Effect.Effect<MemberModel.Entity, DbError>;
@@ -41,6 +51,43 @@ export const MemberServiceLive = Layer.effect(
         Effect.gen(function* () {
           return yield* repo.findAll();
         }),
+
+      findTelegramMember: (payload) =>
+        Effect.gen(function* () {
+          const group = yield* groupRepo.findByTelegramChatId(
+            payload.tg_chat_id,
+          );
+
+          if (!group) {
+            return yield* Effect.fail(
+              new TelegramGroupNotFound({
+                tg_chat_id: payload.tg_chat_id,
+              }),
+            );
+          }
+
+          const member = yield* repo.findByGroupIdAndTgUserId(
+            group.id,
+            payload.tg_user_id,
+          );
+
+          if (!member) {
+            return yield* Effect.fail(
+              new TelegramMemberNotFound({
+                tg_chat_id: payload.tg_chat_id,
+                tg_user_id: payload.tg_user_id,
+              }),
+            );
+          }
+
+          return member;
+        }),
+
+      findActiveByGroupId: (group_id) =>
+        Effect.gen(function* () {
+          return yield* repo.findActiveByGroupId(group_id);
+        }),
+
       createMember: (payload) =>
         Effect.gen(function* () {
           return yield* repo.create(payload);
@@ -64,7 +111,33 @@ export const MemberServiceLive = Layer.effect(
         }),
       deactivateTelegramMember: (payload) =>
         Effect.gen(function* () {
-          return yield* repo.deactivateByTelegramUser(payload);
+          const group = yield* groupRepo.findByTelegramChatId(
+            payload.tg_chat_id,
+          );
+
+          if (!group) {
+            return yield* Effect.fail(
+              new TelegramGroupNotFound({
+                tg_chat_id: payload.tg_chat_id,
+              }),
+            );
+          }
+
+          const member = yield* repo.deactivateByTelegramUser({
+            group_id: group.id,
+            tg_user_id: payload.tg_user_id,
+          });
+
+          if (!member) {
+            return yield* Effect.fail(
+              new TelegramMemberNotFound({
+                tg_chat_id: payload.tg_chat_id,
+                tg_user_id: payload.tg_user_id,
+              }),
+            );
+          }
+
+          return member;
         }),
 
       deleteMemberById: (id) =>

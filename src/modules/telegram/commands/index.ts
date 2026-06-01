@@ -2,7 +2,10 @@ import { Effect } from "effect";
 import type { Telegraf } from "telegraf";
 
 import type { TelegramChat, TelegramUser } from "../telegram.mapper";
-import { registerBuyCommand } from "./buy.command";
+import {
+  registerBuyCommand,
+  type BuyCommandDependencies,
+} from "./buy.command";
 import { registerJoinCommand } from "./join.command";
 
 type RegisterTelegramMember = (
@@ -13,6 +16,7 @@ type RegisterTelegramMember = (
 export const registerTelegramCommands = (
   bot: Telegraf,
   registerTelegramMember: RegisterTelegramMember,
+  dependencies: BuyCommandDependencies,
 ) => {
   bot.start((ctx) => {
     return ctx.reply("Welcome to Kit Luy Bot!");
@@ -23,5 +27,5 @@ export const registerTelegramCommands = (
   });
 
   registerJoinCommand(bot, registerTelegramMember);
-  registerBuyCommand(bot);
+  registerBuyCommand(bot, dependencies);
 };

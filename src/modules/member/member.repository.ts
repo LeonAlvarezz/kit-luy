@@ -2,14 +2,23 @@ import { Context, Effect, Layer } from "effect";
 import { MEMBER_STATUS, MemberModel } from "./member.model";
 import { DbError } from "@/core/error";
 import { DrizzleService } from "@/lib/db";
-import { groupTable, memberTable } from "@/lib/db/schema";
+import { memberTable } from "@/lib/db/schema";
 import { and, eq, sql } from "drizzle-orm";
-import { TelegramGroupNotFound, TelegramMemberNotFound } from "./member.error";
 
 export class MemberRepository extends Context.Tag("MemberRepository")<
   MemberRepository,
   {
     findAll: () => Effect.Effect<MemberModel.Entity[], DbError>;
+    findByTgUserId: (
+      tg_user_id: string,
+    ) => Effect.Effect<MemberModel.Entity | undefined, DbError>;
+    findByGroupIdAndTgUserId: (
+      group_id: number,
+      tg_user_id: string,
+    ) => Effect.Effect<MemberModel.Entity | undefined, DbError>;
+    findActiveByGroupId: (
+      group_id: number,
+    ) => Effect.Effect<MemberModel.Entity[], DbError>;
     create: (
       payload: MemberModel.Create,
     ) => Effect.Effect<MemberModel.Entity, DbError>;
@@ -17,11 +26,8 @@ export class MemberRepository extends Context.Tag("MemberRepository")<
       payload: MemberModel.UpsertTelegramMember,
     ) => Effect.Effect<MemberModel.Entity, DbError>;
     deactivateByTelegramUser: (
-      payload: MemberModel.DeactivateTelegramMember,
-    ) => Effect.Effect<
-      MemberModel.Entity,
-      DbError | TelegramGroupNotFound | TelegramMemberNotFound
-    >;
+      payload: MemberModel.DeactivateMemberByTelegramUser,
+    ) => Effect.Effect<MemberModel.Entity | undefined, DbError>;
     delete: (id: number) => Effect.Effect<MemberModel.Entity, DbError>;
   }
 >() {}
@@ -43,6 +49,36 @@ export const MemberRepositoryLive = Layer.effect(
             catch: (error) => new DbError({ error }),
           });
           return result;
+        }),
+      findByTgUserId: (tg_user_id) =>
+        Effect.tryPromise({
+          try: () =>
+            db.query.memberTable.findFirst({
+              where: eq(memberTable.tg_user_id, tg_user_id),
+            }),
+          catch: (error) => new DbError({ error }),
+        }),
+      findByGroupIdAndTgUserId: (group_id, tg_user_id) =>
+        Effect.tryPromise({
+          try: () =>
+            db.query.memberTable.findFirst({
+              where: and(
+                eq(memberTable.group_id, group_id),
+                eq(memberTable.tg_user_id, tg_user_id),
+              ),
+            }),
+          catch: (error) => new DbError({ error }),
+        }),
+      findActiveByGroupId: (group_id) =>
+        Effect.tryPromise({
+          try: () =>
+            db.query.memberTable.findMany({
+              where: and(
+                eq(memberTable.group_id, group_id),
+                eq(memberTable.status, MEMBER_STATUS.ACTIVE),
+              ),
+            }),
+          catch: (error) => new DbError({ error }),
         }),
       upsertByTelegramUser: (payload) =>
         Effect.gen(function* () {
@@ -69,22 +105,6 @@ export const MemberRepositoryLive = Layer.effect(
 
       deactivateByTelegramUser: (payload) =>
         Effect.gen(function* () {
-          const group = yield* Effect.tryPromise({
-            try: () =>
-              db.query.groupTable.findFirst({
-                where: eq(groupTable.tg_chat_id, payload.tg_chat_id),
-              }),
-            catch: (error) => new DbError({ error }),
-          });
-
-          if (!group) {
-            return yield* Effect.fail(
-              new TelegramGroupNotFound({
-                tg_chat_id: payload.tg_chat_id,
-              }),
-            );
-          }
-
           const [result] = yield* Effect.tryPromise({
             try: () =>
               db
@@ -95,22 +115,13 @@ export const MemberRepositoryLive = Layer.effect(
                 })
                 .where(
                   and(
-                    eq(memberTable.group_id, group.id),
+                    eq(memberTable.group_id, payload.group_id),
                     eq(memberTable.tg_user_id, payload.tg_user_id),
                   ),
                 )
                 .returning(),
             catch: (error) => new DbError({ error }),
           });
-
-          if (!result) {
-            return yield* Effect.fail(
-              new TelegramMemberNotFound({
-                tg_chat_id: payload.tg_chat_id,
-                tg_user_id: payload.tg_user_id,
-              }),
-            );
-          }
 
           return result;
         }),

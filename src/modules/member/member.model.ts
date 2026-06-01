@@ -51,4 +51,8 @@ export namespace MemberModel {
     tg_chat_id: string;
     tg_user_id: string;
   };
+  export type DeactivateMemberByTelegramUser = {
+    group_id: number;
+    tg_user_id: string;
+  };
 }
