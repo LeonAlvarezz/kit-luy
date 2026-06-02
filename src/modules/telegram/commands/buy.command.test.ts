@@ -24,7 +24,12 @@ const createMember = (
   ...overrides,
 });
 
-const createBuyContext = (text: string, fromId: number): TelegrafContext =>
+const createBuyContext = (
+  text: string,
+  fromId: number,
+  replies: string[] = [],
+  replyOptions: unknown[] = [],
+): TelegrafContext =>
   ({
     chat: {
       id: -100123,
@@ -43,7 +48,11 @@ const createBuyContext = (text: string, fromId: number): TelegrafContext =>
     update: {
       update_id: 99,
     },
-    reply: () => Promise.resolve(),
+    reply: (message: string, options?: unknown) => {
+      replies.push(message);
+      replyOptions.push(options);
+      return Promise.resolve();
+    },
   }) as unknown as TelegrafContext;
 
 describe("registerBuyCommand", () => {
@@ -62,6 +71,8 @@ describe("registerBuyCommand", () => {
     const payer = createMember(1, { tg_user_id: "1001", alias: "payer" });
     const otherMember = createMember(2);
     let createdPayload: PurchaseModel.CreateWithAllocations | undefined;
+    const replies: string[] = [];
+    const replyOptions: unknown[] = [];
 
     registerBuyCommand(bot, {
       findTelegramMember: () => Effect.succeed(payer),
@@ -84,7 +95,7 @@ describe("registerBuyCommand", () => {
     });
 
     expect(buyHandler).toBeDefined();
-    await buyHandler?.(createBuyContext("/buy 4", 1001));
+    await buyHandler?.(createBuyContext("/buy 4", 1001, replies, replyOptions));
 
     expect(createdPayload?.purchase).toMatchObject({
       payer_member_id: payer.id,
@@ -99,5 +110,9 @@ describe("registerBuyCommand", () => {
         allocation_kind: AllocationKind.EQUAL,
       },
     ]);
+    expect(replies).toEqual([
+      "Purchase #1 created: <code>$4.00</code> paid by <b>Member 1</b>.\n\nBeneficiaries:\n   - Member 2\t\t\t\t\t<code>$2.00</code>",
+    ]);
+    expect(replyOptions).toEqual([{ parse_mode: "HTML" }]);
   });
 });

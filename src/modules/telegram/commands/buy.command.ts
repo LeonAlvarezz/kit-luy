@@ -6,10 +6,11 @@ import { PurchaseNoActiveMembers } from "@/modules/purchase/purchase.error";
 import { PurchaseStatus } from "@/modules/purchase/purchase.model";
 import type { PurchaseService } from "@/modules/purchase/purchase.service";
 import { splitEqually, toCents } from "@/modules/purchase/purchase.utils";
+import { formatBuyAllReply } from "./buy.utils";
 import { runTelegramCommand } from "./command-error";
 import { parseBuyCommand } from "../parsers/buy.parser";
 import { IncorrectTelegramCommand } from "../telegram.error";
-import { formatMemberName, isSettlementGroupChat } from "../telegram.utils";
+import { isSettlementGroupChat } from "../telegram.utils";
 
 export type BuyCommandDependencies = Pick<
   Context.Tag.Service<typeof MemberService>,
@@ -102,23 +103,17 @@ export const registerBuyCommand = (
           })),
         });
 
-        const payerName = sender.alias
-          ? `@${sender.alias}`
-          : (sender.display_name ?? `member #${sender.id}`);
-
-        const beneficiaryLines = beneficiaryAllocations
-          .map(({ member, allocation }) => {
-            const name = formatMemberName(member);
-            const amount = (allocation.amount / 100).toFixed(2);
-            return `  • ${name} owes ${amount}`;
-          })
-          .join("\n");
+        const replyMessage = formatBuyAllReply({
+          purchaseId: result.purchase.id,
+          totalAmount,
+          payer: sender,
+          beneficiaryAllocations,
+        });
 
         return yield* Effect.promise(() =>
-          ctx.reply(
-            `Purchase #${result.purchase.id} created: ${command.totalAmount} paid by ${payerName}.\n\n` +
-              `Beneficiaries:\n${beneficiaryLines}`,
-          ),
+          ctx.reply(replyMessage, {
+            parse_mode: "HTML",
+          }),
         );
       }
 

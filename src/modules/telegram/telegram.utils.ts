@@ -12,3 +12,9 @@ export const formatMemberName = (member: {
   readonly alias: string | null;
   readonly display_name: string | null;
 }) => (member.display_name ? member.display_name : `@${member.alias}`);
+
+export const escapeHtml = (value: string) =>
+  value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");

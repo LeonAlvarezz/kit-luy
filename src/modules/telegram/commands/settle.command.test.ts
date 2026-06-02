@@ -122,7 +122,7 @@ describe("registerSettleCommand", () => {
     await settleHandler?.(createSettleContext(replies, replyOptions));
 
     expect(replies).toEqual([
-      "Repayments to settle:\n+ <b>Member 3</b>\n   - Member 2 4.00\n   - Member 4 1.00\n\n+ <b>Member 5</b>\n   - Member 4 3.00",
+      "Repayments to settle:\n+ <b>Member 3</b>\n   - Member 2\t\t\t\t\t<code>$4.00</code>\n   - Member 4\t\t\t\t\t<code>$1.00</code>\n\n+ <b>Member 5</b>\n   - Member 4\t\t\t\t\t<code>$3.00</code>",
     ]);
     expect(replyOptions).toEqual([{ parse_mode: "HTML" }]);
   });

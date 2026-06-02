@@ -57,7 +57,7 @@ export const registerSettleCommand = (
       const repaymentLines = formatRepayments(repayments, memberById);
 
       return yield* Effect.promise(() =>
-        ctx.reply(`Repayments to settle:\n${repaymentLines}`, {
+        ctx.reply(`Repayments to settle:\n\n${repaymentLines}`, {
           parse_mode: "HTML",
         }),
       );
