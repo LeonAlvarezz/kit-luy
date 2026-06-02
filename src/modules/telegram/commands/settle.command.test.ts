@@ -23,6 +23,7 @@ const createMember = (
 
 const createSettleContext = (
   replies: string[],
+  replyOptions: unknown[] = [],
   fromId = 1001,
 ): TelegrafContext =>
   ({
@@ -43,8 +44,9 @@ const createSettleContext = (
     update: {
       update_id: 100,
     },
-    reply: (message: string) => {
+    reply: (message: string, options?: unknown) => {
       replies.push(message);
+      replyOptions.push(options);
       return Promise.resolve();
     },
   }) as unknown as TelegrafContext;
@@ -95,6 +97,7 @@ describe("registerSettleCommand", () => {
     const secondCreditor = createMember(4, { alias: "charlie" });
     const secondDebtor = createMember(5, { alias: "dara" });
     const replies: string[] = [];
+    const replyOptions: unknown[] = [];
 
     registerSettleCommand(bot, {
       findTelegramMember: () => Effect.succeed(sender),
@@ -116,10 +119,11 @@ describe("registerSettleCommand", () => {
     });
 
     expect(settleHandler).toBeDefined();
-    await settleHandler?.(createSettleContext(replies));
+    await settleHandler?.(createSettleContext(replies, replyOptions));
 
     expect(replies).toEqual([
-      "Repayments to settle:\n@bob\n  @alice 4.00\n  @charlie 1.00\n\n@dara\n  @charlie 3.00",
+      "Repayments to settle:\n+ <b>Member 3</b>\n   - Member 2 4.00\n   - Member 4 1.00\n\n+ <b>Member 5</b>\n   - Member 4 3.00",
     ]);
+    expect(replyOptions).toEqual([{ parse_mode: "HTML" }]);
   });
 });

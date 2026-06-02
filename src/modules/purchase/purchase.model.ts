@@ -73,4 +73,13 @@ export namespace PurchaseModel {
   export type SettlementBalance = Schema.Schema.Type<
     typeof SettlementBalanceSchema
   >;
+  export type SettlementParticipant = {
+    readonly memberId: number;
+    amount: number;
+  };
+  export type Repayment = {
+    readonly fromMemberId: number;
+    readonly toMemberId: number;
+    readonly amount: number;
+  };
 }
