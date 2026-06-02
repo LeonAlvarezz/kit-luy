@@ -1,6 +1,7 @@
 import { HttpApiBuilder, HttpApiScalar, HttpServer } from "@effect/platform";
 import { Effect as Ef, Layer } from "effect";
 
+import { logAppError } from "@/core/error/app-error";
 import { withResponseEnvelope } from "@/core/middleware/response-envelope";
 import { config, configProviderFromEnv } from "./lib/config";
 import { AppApi } from "@/http/api";
@@ -56,8 +57,10 @@ const setupTelegramWebhookOnStartup = (env: Bindings) =>
     yield* service.setWebhook(webhookUrl);
     yield* Ef.log("telegram webhook registered");
   }).pipe(
-    Ef.catchAll((err) =>
-      Ef.logError(`telegram webhook setup failed: ${err.message}`),
+    Ef.catchAllCause((cause) =>
+      logAppError(cause, {
+        message: "Telegram webhook setup failed",
+      }),
     ),
     Ef.provide(TelegramServiceLive),
     Ef.provide(DrizzleFromWorkerEnvLive),

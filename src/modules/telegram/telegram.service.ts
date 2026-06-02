@@ -24,6 +24,7 @@ import {
   isSettlementGroupChat,
 } from "./telegram.utils";
 import {
+  InvalidTelegramMemberPayload,
   TelegramSetWebhookFailed,
   TelegramUpdateHandlingFailed,
 } from "./telegram.error";
@@ -58,22 +59,20 @@ export const TelegramServiceLive = Layer.effect(
 
     const bot = new Telegraf(token);
 
-    const registerTelegramMember = (chat: TelegramChat, user: TelegramUser) => {
-      const payload = toRegisterTelegramMember(chat, user);
-      return payload
-        ? memberService.registerTelegramMember(payload).pipe(Effect.asVoid)
-        : Effect.void;
-    };
-
-    const deactivateTelegramMember = (
-      chat: TelegramChat,
-      user: TelegramUser,
-    ) => {
-      const payload = toDeactivateTelegramMember(chat, user);
-      return payload
-        ? memberService.deactivateTelegramMember(payload).pipe(Effect.asVoid)
-        : Effect.void;
-    };
+    const registerTelegramMember = (chat: TelegramChat, user: TelegramUser) =>
+      Effect.gen(function* () {
+        const payload = toRegisterTelegramMember(chat, user);
+        if (!payload) {
+          return yield* Effect.fail(
+            new InvalidTelegramMemberPayload({
+              operation: "register",
+              tg_chat_id: String(chat.id),
+              tg_user_id: String(user.id),
+            }),
+          );
+        }
+        return yield* memberService.registerTelegramMember(payload);
+      });
 
     bot.catch((error, ctx) => {
       throw new TelegramUpdateHandlingFailed({
@@ -96,16 +95,22 @@ export const TelegramServiceLive = Layer.effect(
       );
     });
 
-    registerTelegramCommands(bot, registerTelegramMember, {
-      findTelegramMember: memberService.findTelegramMember,
-      findActiveByGroupId: memberService.findActiveByGroupId,
-      createPurchaseWithAllocations: purchaseService.createWithAllocations,
-    });
+    registerTelegramCommands(
+      bot,
+      {
+        registerTelegramMember: memberService.registerTelegramMember,
+      },
+      {
+        findTelegramMember: memberService.findTelegramMember,
+        findActiveByGroupId: memberService.findActiveByGroupId,
+        createPurchaseWithAllocations: purchaseService.createWithAllocations,
+      },
+    );
 
     registerTelegramEvents(bot, {
       updateTelegramChatId: groupService.updateTelegramChatId,
-      registerTelegramMember,
-      deactivateTelegramMember,
+      registerTelegramMember: memberService.registerTelegramMember,
+      deactivateTelegramMember: memberService.deactivateTelegramMember,
     });
 
     const handleUpdate = (update: any) =>

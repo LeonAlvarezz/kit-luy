@@ -1,5 +1,14 @@
-import { HttpApp, HttpServerResponse } from "@effect/platform";
+import {
+  HttpApp,
+  HttpServerRequest,
+  HttpServerResponse,
+} from "@effect/platform";
 import { Effect } from "effect";
+
+import {
+  APP_ERROR_LOGGED_HEADER,
+  logAppError,
+} from "@/core/error/app-error";
 
 const statusMessage = (status: number) => {
   switch (status) {
@@ -91,6 +100,10 @@ const errorBody = (
 
 const responseEnvelopeExcludedPaths = new Set(["/docs", "/openapi.json"]);
 
+const hasLoggedAppError = (
+  response: HttpServerResponse.HttpServerResponse,
+) => response.headers[APP_ERROR_LOGGED_HEADER] === "true";
+
 const getPathname = (url: string) => {
   if (url.startsWith("http://") || url.startsWith("https://")) {
     return new URL(url).pathname;
@@ -99,40 +112,80 @@ const getPathname = (url: string) => {
   return url.split("?")[0] ?? url;
 };
 
-export const withResponseEnvelope = (app: HttpApp.Default) =>
-  HttpApp.withPreResponseHandler(app, (request, response) => {
-    const pathname = getPathname(request.url);
+const withHttpErrorBoundary = (app: HttpApp.Default) =>
+  app.pipe(
+    Effect.catchAllCause((cause) =>
+      Effect.gen(function* () {
+        const request = yield* HttpServerRequest.HttpServerRequest;
 
-    if (responseEnvelopeExcludedPaths.has(pathname)) {
-      return Effect.succeed(response);
-    }
-
-    const payload = parseBody(response);
-
-    if (response.status >= 200 && response.status < 300) {
-      return Effect.succeed(
-        HttpServerResponse.unsafeJson(
-          {
-            success: true,
-            data: payload,
+        yield* logAppError(cause, {
+          message: "Unhandled HTTP error",
+          annotations: {
+            method: request.method,
+            url: request.url,
           },
-          { status: response.status },
-        ),
-      );
-    }
+        });
 
-    const body = payload && typeof payload === "object" ? (payload as any) : {};
-    const envelope = errorBody(response, payload);
-    const log = response.status >= 500 ? Effect.logError : Effect.logWarning;
-
-    return log(envelope.error.message).pipe(
-      Effect.annotateLogs({
-        status: response.status,
-        code: envelope.error.code,
-        error: body.code ?? body._tag ?? envelope.error.code,
+        return HttpServerResponse.unsafeJson(
+          {
+            message: "Internal server error",
+            code: "INTERNAL_SERVER_ERROR",
+          },
+          {
+            status: 500,
+            headers: {
+              [APP_ERROR_LOGGED_HEADER]: "true",
+            },
+          },
+        );
       }),
-      Effect.as(
-        HttpServerResponse.unsafeJson(envelope, { status: response.status }),
-      ),
-    );
-  });
+    ),
+  );
+
+export const withResponseEnvelope = (app: HttpApp.Default) =>
+  HttpApp.withPreResponseHandler(
+    withHttpErrorBoundary(app),
+    (request, response) => {
+      const pathname = getPathname(request.url);
+
+      if (responseEnvelopeExcludedPaths.has(pathname)) {
+        return Effect.succeed(response);
+      }
+
+      const payload = parseBody(response);
+
+      if (response.status >= 200 && response.status < 300) {
+        return Effect.succeed(
+          HttpServerResponse.unsafeJson(
+            {
+              success: true,
+              data: payload,
+            },
+            { status: response.status },
+          ),
+        );
+      }
+
+      const body =
+        payload && typeof payload === "object" ? (payload as any) : {};
+      const envelope = errorBody(response, payload);
+      const envelopeResponse = HttpServerResponse.unsafeJson(envelope, {
+        status: response.status,
+      });
+
+      if (hasLoggedAppError(response)) {
+        return Effect.succeed(envelopeResponse);
+      }
+
+      const log = response.status >= 500 ? Effect.logError : Effect.logWarning;
+
+      return log(envelope.error.message).pipe(
+        Effect.annotateLogs({
+          status: response.status,
+          code: envelope.error.code,
+          error: body.code ?? body._tag ?? envelope.error.code,
+        }),
+        Effect.as(envelopeResponse),
+      );
+    },
+  );

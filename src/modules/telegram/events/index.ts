@@ -1,31 +1,29 @@
-import { Effect } from "effect";
+import { Context, Effect } from "effect";
 import type { Telegraf } from "telegraf";
 import { message } from "telegraf/filters";
 
-import type { TelegramChat, TelegramUser } from "../telegram.mapper";
+import {
+  toDeactivateTelegramMember,
+  toRegisterTelegramMember,
+  type TelegramChat,
+  type TelegramUser,
+} from "../telegram.mapper";
+import { MemberService } from "@/modules/member/member.service";
+import { GroupService } from "@/modules/group/group.service";
+import { InvalidTelegramMemberPayload } from "../telegram.error";
 
-type RegisterTelegramMember = (
-  chat: TelegramChat,
-  user: TelegramUser,
-) => Effect.Effect<void, unknown>;
-
-type DeactivateTelegramMember = (
-  chat: TelegramChat,
-  user: TelegramUser,
-) => Effect.Effect<void, unknown>;
-
-type UpdateTelegramChatId = (
-  oldChatId: string,
-  newChatId: string,
-) => Effect.Effect<unknown, unknown>;
+export type TelegramEventDependency = Pick<
+  Context.Tag.Service<typeof MemberService>,
+  "registerTelegramMember" | "deactivateTelegramMember"
+> & {
+  updateTelegramChatId: Context.Tag.Service<
+    typeof GroupService
+  >["updateTelegramChatId"];
+};
 
 export const registerTelegramEvents = (
   bot: Telegraf,
-  dependencies: {
-    readonly updateTelegramChatId: UpdateTelegramChatId;
-    readonly registerTelegramMember: RegisterTelegramMember;
-    readonly deactivateTelegramMember: DeactivateTelegramMember;
-  },
+  dependencies: TelegramEventDependency,
 ) => {
   const {
     updateTelegramChatId,
@@ -42,10 +40,30 @@ export const registerTelegramEvents = (
   });
 
   bot.on(message("new_chat_members"), async (ctx) => {
-    const registerNewMembers = Effect.all(
-      ctx.message.new_chat_members.map((member) =>
-        registerTelegramMember(ctx.chat, member),
-      ),
+    const membersToRegister = ctx.message.new_chat_members.filter(
+      (member) => !member.is_bot,
+    );
+
+    const toRegisterPayloadEffect = (chat: TelegramChat, user: TelegramUser) =>
+      Effect.fromNullable(toRegisterTelegramMember(chat, user)).pipe(
+        Effect.mapError(
+          () =>
+            new InvalidTelegramMemberPayload({
+              operation: "register",
+              tg_chat_id: String(chat.id),
+              tg_user_id: String(user.id),
+            }),
+        ),
+      );
+
+    const register = (chat: TelegramChat, user: TelegramUser) =>
+      toRegisterPayloadEffect(chat, user).pipe(
+        Effect.flatMap((payload) => registerTelegramMember(payload)),
+      );
+
+    const registerNewMembers = Effect.forEach(
+      membersToRegister,
+      (member) => register(ctx.chat, member),
       { concurrency: "unbounded" },
     );
 
@@ -65,8 +83,28 @@ export const registerTelegramEvents = (
   });
 
   bot.on(message("left_chat_member"), (ctx) => {
+    const toDeactivatePayloadEffect = (
+      chat: TelegramChat,
+      user: TelegramUser,
+    ) =>
+      Effect.fromNullable(toDeactivateTelegramMember(chat, user)).pipe(
+        Effect.mapError(
+          () =>
+            new InvalidTelegramMemberPayload({
+              operation: "register",
+              tg_chat_id: String(chat.id),
+              tg_user_id: String(user.id),
+            }),
+        ),
+      );
+
+    const deactivate = (chat: TelegramChat, user: TelegramUser) =>
+      toDeactivatePayloadEffect(chat, user).pipe(
+        Effect.flatMap((payload) => deactivateTelegramMember(payload)),
+      );
+
     return Effect.runPromise(
-      deactivateTelegramMember(ctx.chat, ctx.message.left_chat_member),
+      deactivate(ctx.chat, ctx.message.left_chat_member),
     );
   });
 

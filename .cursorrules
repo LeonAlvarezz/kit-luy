@@ -29,3 +29,5 @@
 ### 4. TypeScript Guidelines
 - **No `any` Assertions**: Under no circumstances should you assert type `any` (e.g., `as any`). DO NOT ever do that. Keep code strictly and safely typed.
 - **Tagged Errors Only**: Do not create, throw, fail, or expose plain `Error` instances for application failures. Use `Schema.TaggedError` for typed domain/integration errors, and create a new tagged error when no existing error type accurately describes the failure.
+- **Boundary Error Logging**: Do not log errors inside repositories, services, parsers, or business logic. Return `Effect.fail(new TaggedError(...))` or wrap async work with `Effect.tryPromise({ try, catch })`. Let runtime boundaries (`withResponseEnvelope`, `runTelegramCommand`, `TelegramService.handleUpdate`, startup/background handlers) log via `catchAllCause` + `logAppError`.
+- **Command Validation Errors**: Telegram command misuse should fail with `IncorrectTelegramCommand`; the command boundary replies to the user and logs it as a warning.

@@ -1,29 +1,13 @@
 import { Cause, Effect } from "effect";
 import type { Context as TelegrafContext } from "telegraf";
 
+import {
+  getErrorCode,
+  getErrorMessage,
+  getErrorName,
+  logAppError,
+} from "@/core/error/app-error";
 import { LoggerLive } from "@/lib/logger";
-
-const toErrorMessage = (error: unknown, fallbackMessage: string) => {
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "message" in error &&
-    typeof error.message === "string"
-  ) {
-    return error.message;
-  }
-
-  return fallbackMessage;
-};
-
-const getStringField = (error: unknown, field: string) => {
-  if (typeof error !== "object" || error === null || !(field in error)) {
-    return undefined;
-  }
-
-  const value = (error as Record<string, unknown>)[field];
-  return typeof value === "string" ? value : undefined;
-};
 
 export const logAndReplyCommandError =
   (
@@ -35,27 +19,22 @@ export const logAndReplyCommandError =
   ) =>
   (cause: Cause.Cause<unknown>) => {
     const error = Cause.squash(cause);
-    const message = toErrorMessage(
+    const message = getErrorMessage(
       error,
       options.fallbackMessage ?? "Command failed.",
     );
 
-    return Effect.logError("Telegram command failed").pipe(
-      Effect.annotateLogs({
+    return logAppError(cause, {
+      message: "Telegram command failed",
+      annotations: {
         command: options.command,
-        message,
-        code: getStringField(error, "code") ?? "UNKNOWN",
-        error:
-          getStringField(error, "_tag") ??
-          getStringField(error, "name") ??
-          "UNKNOWN",
-        cause: Cause.pretty(cause),
+        code: getErrorCode(error),
+        error: getErrorName(error),
         updateId: String(ctx.update.update_id),
         chatId: ctx.chat ? String(ctx.chat.id) : "unknown",
         userId: ctx.from ? String(ctx.from.id) : "unknown",
-      }),
-      Effect.zipRight(Effect.promise(() => ctx.reply(message))),
-    );
+      },
+    }).pipe(Effect.zipRight(Effect.promise(() => ctx.reply(message))));
   };
 
 export const runTelegramCommand = <A, E>(
