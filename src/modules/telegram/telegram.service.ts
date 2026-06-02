@@ -8,10 +8,6 @@ import {
   MemberServiceLive,
 } from "@/modules/member/member.service";
 import {
-  PurchaseAllocationService,
-  PurchaseAllocationServiceLive,
-} from "@/modules/purchase/purchase-allocation.service";
-import {
   PurchaseService,
   PurchaseServiceLive,
 } from "@/modules/purchase/purchase.service";
@@ -27,13 +23,21 @@ import {
   isChatMigrationMessage,
   isSettlementGroupChat,
 } from "./telegram.utils";
+import {
+  TelegramSetWebhookFailed,
+  TelegramUpdateHandlingFailed,
+} from "./telegram.error";
 
 export class TelegramService extends Context.Tag("TelegramService")<
   TelegramService,
   {
     readonly bot: Telegraf;
-    readonly handleUpdate: (update: any) => Effect.Effect<void, Error, never>;
-    readonly setWebhook: (url: string) => Effect.Effect<void, Error, never>;
+    readonly handleUpdate: (
+      update: any,
+    ) => Effect.Effect<void, TelegramUpdateHandlingFailed, never>;
+    readonly setWebhook: (
+      url: string,
+    ) => Effect.Effect<true, TelegramSetWebhookFailed, never>;
   }
 >() {}
 
@@ -44,7 +48,6 @@ export const TelegramServiceLive = Layer.effect(
     const groupService = yield* GroupService;
     const memberService = yield* MemberService;
     const purchaseService = yield* PurchaseService;
-    const purchaseAllocationService = yield* PurchaseAllocationService;
     const token = env.TELEGRAM_BOT_TOKEN;
 
     if (!token) {
@@ -73,9 +76,9 @@ export const TelegramServiceLive = Layer.effect(
     };
 
     bot.catch((error, ctx) => {
-      throw new Error(
-        `Telegram update ${ctx.update.update_id} failed: ${String(error)}`,
-      );
+      throw new TelegramUpdateHandlingFailed({
+        message: `Telegram update ${ctx.update.update_id} failed: ${String(error)}`,
+      });
     });
 
     bot.use(async (ctx, next) => {
@@ -96,8 +99,7 @@ export const TelegramServiceLive = Layer.effect(
     registerTelegramCommands(bot, registerTelegramMember, {
       findTelegramMember: memberService.findTelegramMember,
       findActiveByGroupId: memberService.findActiveByGroupId,
-      createPurchase: purchaseService.create,
-      createPurchaseAllocation: purchaseAllocationService.create,
+      createPurchaseWithAllocations: purchaseService.createWithAllocations,
     });
 
     registerTelegramEvents(bot, {
@@ -109,13 +111,19 @@ export const TelegramServiceLive = Layer.effect(
     const handleUpdate = (update: any) =>
       Effect.tryPromise({
         try: () => bot.handleUpdate(update),
-        catch: (error) => new Error(`Telegraf update error: ${error}`),
+        catch: (error) =>
+          new TelegramUpdateHandlingFailed({
+            message: `Telegraf update error: ${String(error)}`,
+          }),
       }).pipe(Effect.asVoid);
 
     const setWebhook = (url: string) =>
       Effect.tryPromise({
         try: () => bot.telegram.setWebhook(url),
-        catch: (error) => new Error(`Telegram setWebhook error: ${error}`),
+        catch: (error) =>
+          new TelegramSetWebhookFailed({
+            message: `Telegram setWebhook error: ${String(error)}`,
+          }),
       });
 
     return {
@@ -128,5 +136,4 @@ export const TelegramServiceLive = Layer.effect(
   Layer.provide(GroupServiceLive),
   Layer.provide(MemberServiceLive),
   Layer.provide(PurchaseServiceLive),
-  Layer.provide(PurchaseAllocationServiceLive),
 );

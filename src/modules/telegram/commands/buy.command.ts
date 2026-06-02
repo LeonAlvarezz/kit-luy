@@ -2,10 +2,11 @@ import { Context, Effect } from "effect";
 import type { Telegraf } from "telegraf";
 
 import type { MemberService } from "@/modules/member/member.service";
-import type { PurchaseAllocationService } from "@/modules/purchase/purchase-allocation.service";
+import { PurchaseNoActiveMembers } from "@/modules/purchase/purchase.error";
 import { PurchaseStatus } from "@/modules/purchase/purchase.model";
 import type { PurchaseService } from "@/modules/purchase/purchase.service";
 import { splitEqually, toCents } from "@/modules/purchase/purchase.utils";
+import { runTelegramCommand } from "./command-error";
 import { parseBuyCommand } from "../parsers/buy.parser";
 import { isSettlementGroupChat } from "../telegram.utils";
 
@@ -13,27 +14,9 @@ export type BuyCommandDependencies = Pick<
   Context.Tag.Service<typeof MemberService>,
   "findTelegramMember" | "findActiveByGroupId"
 > & {
-  createPurchase: Context.Tag.Service<typeof PurchaseService>["create"];
-  createPurchaseAllocation: Context.Tag.Service<
-    typeof PurchaseAllocationService
-  >["create"];
-};
-
-const toErrorMessage = (error: unknown) => {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "message" in error &&
-    typeof error.message === "string"
-  ) {
-    return error.message;
-  }
-
-  return "Could not record this purchase.";
+  createPurchaseWithAllocations: Context.Tag.Service<
+    typeof PurchaseService
+  >["createWithAllocations"];
 };
 
 export const registerBuyCommand = (
@@ -73,53 +56,79 @@ export const registerBuyCommand = (
           sender.group_id,
         );
 
-        if (members.length <= 0) {
+        const beneficiaries = members.filter(
+          (member) => member.id !== sender.id,
+        );
+
+        if (beneficiaries.length <= 0) {
           return yield* Effect.fail(
-            new Error(
-              "Insufficient member count, cannot create purchase record",
-            ),
+            new PurchaseNoActiveMembers({
+              tg_chat_id: tgChatId,
+              message:
+                "There are no other active members in this settlement group.",
+            }),
           );
         }
 
-        const purchase = yield* dependencies.createPurchase({
-          group_id: sender.group_id,
-          payer_member_id: sender.id,
-          tg_message_id: ctx.message.message_id,
-          amount: toCents(command.totalAmount),
-          note: null,
-          status: PurchaseStatus.ACTIVE,
-          created_at: Date.now(),
+        const totalAmount = toCents(command.totalAmount);
+        const allocations = splitEqually(totalAmount, beneficiaries.length);
+        const result = yield* dependencies.createPurchaseWithAllocations({
+          purchase: {
+            group_id: sender.group_id,
+            payer_member_id: sender.id,
+            tg_message_id: ctx.message.message_id,
+            amount: totalAmount,
+            note: null,
+            status: PurchaseStatus.ACTIVE,
+            created_at: Date.now(),
+          },
+          allocations: beneficiaries.map((member, index) => ({
+            beneficiary_member_id: member.id,
+            responsible_member_id: member.id,
+            amount: allocations[index].amount,
+            allocation_kind: allocations[index].allocation_kind,
+          })),
         });
 
-        const allocations = splitEqually(purchase.amount, members.length);
-
-        yield* Effect.forEach(
-          members,
-          (member, index) =>
-            dependencies.createPurchaseAllocation({
-              purchase_id: purchase.id,
-              beneficiary_member_id: member.id,
-              responsible_member_id: member.id,
-              amount: allocations[index].amount,
-              allocation_kind: allocations[index].allocation_kind,
-            }),
-          { discard: true },
-        );
-
-        return { purchase, sender };
+        return {
+          purchase: result.purchase,
+          sender,
+          beneficiaries,
+          allocations,
+        };
       });
 
-      return Effect.runPromise(createPurchaseFlow)
-        .then(({ purchase, sender }) =>
-          ctx.reply(
-            `Purchase #${purchase.id} created: ${command.totalAmount} paid by ${
-              sender.alias
-                ? `@${sender.alias}`
-                : (sender.display_name ?? `member #${sender.id}`)
-            }.`,
-          ),
-        )
-        .catch((error) => ctx.reply(toErrorMessage(error)));
+      return runTelegramCommand(
+        ctx,
+        {
+          command: "/buy",
+          fallbackMessage: "Could not record this purchase.",
+        },
+        createPurchaseFlow.pipe(
+          Effect.flatMap(({ purchase, sender, beneficiaries, allocations }) => {
+            const payerName = sender.alias
+              ? `@${sender.alias}`
+              : (sender.display_name ?? `member #${sender.id}`);
+
+            const beneficiaryLines = beneficiaries
+              .map((member, index) => {
+                const name = member.alias
+                  ? `@${member.alias}`
+                  : (member.display_name ?? `member #${member.id}`);
+                const amount = (allocations[index].amount / 100).toFixed(2);
+                return `  • ${name} owes ${amount}`;
+              })
+              .join("\n");
+
+            return Effect.promise(() =>
+              ctx.reply(
+                `Purchase #${purchase.id} created: ${command.totalAmount} paid by ${payerName}.\n\n` +
+                  `Beneficiaries:\n${beneficiaryLines}`,
+              ),
+            );
+          }),
+        ),
+      );
     }
 
     return ctx.reply(

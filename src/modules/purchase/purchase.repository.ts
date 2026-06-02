@@ -4,6 +4,7 @@ import { DbError } from "@/core/error";
 import { DrizzleService } from "@/lib/db";
 import { purchaseTable } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import type { BatchItem } from "drizzle-orm/batch";
 
 export class PurchaseRepository extends Context.Tag("PurchaseRepository")<
   PurchaseRepository,

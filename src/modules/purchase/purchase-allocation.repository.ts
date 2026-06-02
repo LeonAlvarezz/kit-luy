@@ -2,7 +2,8 @@ import { DbError } from "@/core/error";
 import { DrizzleService } from "@/lib/db";
 import { purchaseAllocationTable } from "@/lib/db/schema";
 import { Context, Effect, Layer } from "effect";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
+import type { BatchItem } from "drizzle-orm/batch";
 import { PurchaseAllocationModel } from "./purchase-allocation.model";
 
 export class PurchaseAllocationRepository extends Context.Tag(
@@ -17,6 +18,7 @@ export class PurchaseAllocationRepository extends Context.Tag(
     create: (
       payload: PurchaseAllocationModel.Create,
     ) => Effect.Effect<PurchaseAllocationModel.Entity, DbError>;
+
     update: (
       id: number,
       payload: PurchaseAllocationModel.Update,

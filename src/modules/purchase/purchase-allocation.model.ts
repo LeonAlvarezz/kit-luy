@@ -27,11 +27,18 @@ export namespace PurchaseAllocationModel {
     ),
   );
 
+  export const CreateForPurchaseSchema = CreateSchema.pipe(
+    Schema.omit("purchase_id"),
+  );
+
   export const UpdateSchema = Schema.partial(
     EntitySchema.pipe(Schema.pick("amount", "allocation_kind")),
   );
 
   export type Entity = Schema.Schema.Type<typeof EntitySchema>;
   export type Create = Schema.Schema.Type<typeof CreateSchema>;
+  export type CreateForPurchase = Schema.Schema.Type<
+    typeof CreateForPurchaseSchema
+  >;
   export type Update = Schema.Schema.Type<typeof UpdateSchema>;
 }

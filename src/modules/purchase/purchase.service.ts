@@ -1,7 +1,13 @@
 import { DbError } from "@/core/error";
+import { DrizzleService } from "@/lib/db";
+import { purchaseAllocationTable, purchaseTable } from "@/lib/db/schema";
+import { sql } from "drizzle-orm";
 import { Context, Effect, Layer } from "effect";
 import { PurchaseModel } from "./purchase.model";
-import { PurchaseNotFound } from "./purchase.error";
+import {
+  PurchaseAllocationsRequired,
+  PurchaseNotFound,
+} from "./purchase.error";
 import {
   PurchaseRepositoryLive,
   PurchaseRepository,
@@ -17,6 +23,12 @@ export class PurchaseService extends Context.Tag("PurchaseService")<
     create: (
       payload: PurchaseModel.Create,
     ) => Effect.Effect<PurchaseModel.Entity, DbError>;
+    createWithAllocations: (
+      payload: PurchaseModel.CreateWithAllocations,
+    ) => Effect.Effect<
+      PurchaseModel.WithAllocations,
+      DbError | PurchaseAllocationsRequired
+    >;
 
     update: (
       id: number,
@@ -29,6 +41,8 @@ export const PurchaseServiceLive = Layer.effect(
   PurchaseService,
   Effect.gen(function* () {
     const repo = yield* PurchaseRepository;
+    const db = yield* DrizzleService;
+
     return {
       findAll: () =>
         Effect.gen(function* () {
@@ -37,6 +51,39 @@ export const PurchaseServiceLive = Layer.effect(
       create: (payload) =>
         Effect.gen(function* () {
           return yield* repo.create(payload);
+        }),
+      createWithAllocations: (payload) =>
+        Effect.gen(function* () {
+          if (payload.allocations.length <= 0) {
+            return yield* Effect.fail(new PurchaseAllocationsRequired());
+          }
+
+          return yield* Effect.tryPromise({
+            try: async () => {
+              const insertPurchase = db
+                .insert(purchaseTable)
+                .values(payload.purchase)
+                .returning();
+
+              const insertAllocations = db
+                .insert(purchaseAllocationTable)
+                .values(
+                  payload.allocations.map((allocation) => ({
+                    ...allocation,
+                    purchase_id: sql<number>`(select seq from sqlite_sequence where name = 'purchases')`,
+                  })),
+                )
+                .returning();
+
+              const [[purchase], allocations] = await db.batch([
+                insertPurchase,
+                insertAllocations,
+              ]);
+
+              return { purchase, allocations };
+            },
+            catch: (error) => new DbError({ error }),
+          });
         }),
       update: (id, payload) =>
         Effect.gen(function* () {

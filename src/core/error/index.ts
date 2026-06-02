@@ -19,7 +19,10 @@ export class DbError extends Data.TaggedError("DbError")<{
     super({
       error: props.error,
       message:
-        props.error instanceof Error
+        typeof props.error === "object" &&
+        props.error !== null &&
+        "message" in props.error &&
+        typeof props.error.message === "string"
           ? props.error.message
           : String(props.error),
     });

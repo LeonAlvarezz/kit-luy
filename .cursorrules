@@ -3,7 +3,7 @@
 ## Tech Stack
 - **Framework**: Effect (Gen, Layer, Schema, Context) for functional TypeScript.
 - **Database**: Drizzle ORM (SQLite / D1).
-- **HTTP Platform**: `@effect/platform` / Hono.
+- **HTTP Platform**: `@effect/platform`.
 - **Telegram Bot**: Telegraf.
 
 ## Rules & Requirements
@@ -21,10 +21,11 @@
 
 ### 3. Module Boundaries
 - **Models**: Domain payload/entity types belong in the module's `*.model.ts` file. For example, member registration input types such as `MemberModel.UpsertTelegramMember` and `MemberModel.RegisterTelegramMember` must live in `member.model.ts`, not repository or service files.
-- **Repositories**: Repositories expose database primitives only and should use model-owned types for payloads.
-- **Services**: Services own application use cases and orchestration between repositories. Telegram member registration should be exposed as a member service use case, while Telegram handlers only map Telegram update data and call the service.
+- **Schema-First Types**: Always create an Effect `Schema` for domain entity, create, update, and composite payload/result shapes, then infer TypeScript types from those schemas with `Schema.Schema.Type`. Do not hand-write parallel TypeScript types when a schema can represent the shape.
+- **Repositories**: Repositories expose thin, single-module database primitives only and should use model-owned types for payloads. A repository should not orchestrate multiple module repositories, cross module boundaries, or own application use cases.
+- **Services**: Services own application use cases, orchestration between repositories/modules, and database transactions that span multiple writes or tables. Telegram member registration should be exposed as a member service use case, while Telegram handlers only map Telegram update data and call the service.
 - **Mappers**: Provider-specific normalization, such as Telegram display names and chat titles, should live in mapper/helper files near that provider integration instead of inside the bot handler body.
 
 ### 4. TypeScript Guidelines
 - **No `any` Assertions**: Under no circumstances should you assert type `any` (e.g., `as any`). DO NOT ever do that. Keep code strictly and safely typed.
-
+- **Tagged Errors Only**: Do not create, throw, fail, or expose plain `Error` instances for application failures. Use `Schema.TaggedError` for typed domain/integration errors, and create a new tagged error when no existing error type accurately describes the failure.

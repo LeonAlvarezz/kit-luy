@@ -1,11 +1,9 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "hono-template",
+  "name": "kit-luy",
   "main": "src/index.ts",
   "compatibility_date": "2026-05-14",
-  "compatibility_flags": [
-    "nodejs_compat"
-  ],
+  "compatibility_flags": ["nodejs_compat"],
   "d1_databases": [
     {
       "binding": "D1_DB",

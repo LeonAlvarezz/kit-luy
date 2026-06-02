@@ -1,4 +1,5 @@
 import { Schema } from "effect";
+import { PurchaseAllocationModel } from "./purchase-allocation.model";
 
 export enum PurchaseStatus {
   ACTIVE = "active",
@@ -34,7 +35,23 @@ export namespace PurchaseModel {
     EntitySchema.pipe(Schema.pick("amount", "note", "status", "voided_at")),
   );
 
+  export const CreateWithAllocationsSchema = Schema.Struct({
+    purchase: CreateSchema,
+    allocations: Schema.Array(PurchaseAllocationModel.CreateForPurchaseSchema),
+  });
+
+  export const WithAllocationsSchema = Schema.Struct({
+    purchase: EntitySchema,
+    allocations: Schema.Array(PurchaseAllocationModel.EntitySchema),
+  });
+
   export type Entity = Schema.Schema.Type<typeof EntitySchema>;
   export type Create = Schema.Schema.Type<typeof CreateSchema>;
   export type Update = Schema.Schema.Type<typeof UpdateSchema>;
+  export type CreateWithAllocations = Schema.Schema.Type<
+    typeof CreateWithAllocationsSchema
+  >;
+  export type WithAllocations = Schema.Schema.Type<
+    typeof WithAllocationsSchema
+  >;
 }

@@ -9,5 +9,9 @@ export class DrizzleService extends Context.Tag("DrizzleService")<
   AppDB
 >() {}
 
+export type DrizzleTransaction = Parameters<
+  Parameters<AppDB["transaction"]>[0]
+>[0];
+
 export const makeDrizzleLayer = (d1: D1Database) =>
   Layer.succeed(DrizzleService, drizzle(d1, { schema }));

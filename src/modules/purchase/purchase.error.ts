@@ -142,3 +142,19 @@ export class PurchaseAllocationTotalMismatch extends Schema.TaggedError<Purchase
     });
   }
 }
+
+export class PurchaseAllocationsRequired extends Schema.TaggedError<PurchaseAllocationsRequired>()(
+  "PurchaseAllocationsRequired",
+  {
+    message: Schema.String,
+    code: Schema.String,
+  },
+) {
+  constructor(props?: { message?: string }) {
+    super({
+      message:
+        props?.message ?? "At least one purchase allocation is required.",
+      code: "PURCHASE_ALLOCATIONS_REQUIRED",
+    });
+  }
+}
