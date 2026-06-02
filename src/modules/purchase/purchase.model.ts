@@ -19,6 +19,14 @@ export namespace PurchaseModel {
     voided_at: Schema.NullOr(Schema.Number),
   });
 
+  export const EntityWithAllocationSchema = EntitySchema.pipe(
+    Schema.extend(
+      Schema.Struct({
+        allocations: Schema.Array(PurchaseAllocationModel.EntitySchema),
+      }),
+    ),
+  );
+
   export const CreateSchema = EntitySchema.pipe(
     Schema.pick(
       "group_id",
@@ -30,6 +38,11 @@ export namespace PurchaseModel {
       "created_at",
     ),
   );
+
+  export const SettlementBalanceSchema = Schema.Struct({
+    member_id: Schema.Number,
+    balance: Schema.Number,
+  });
 
   export const UpdateSchema = Schema.partial(
     EntitySchema.pipe(Schema.pick("amount", "note", "status", "voided_at")),
@@ -46,6 +59,9 @@ export namespace PurchaseModel {
   });
 
   export type Entity = Schema.Schema.Type<typeof EntitySchema>;
+  export type EntityWithAllocation = Schema.Schema.Type<
+    typeof EntityWithAllocationSchema
+  >;
   export type Create = Schema.Schema.Type<typeof CreateSchema>;
   export type Update = Schema.Schema.Type<typeof UpdateSchema>;
   export type CreateWithAllocations = Schema.Schema.Type<
@@ -53,5 +69,8 @@ export namespace PurchaseModel {
   >;
   export type WithAllocations = Schema.Schema.Type<
     typeof WithAllocationsSchema
+  >;
+  export type SettlementBalance = Schema.Schema.Type<
+    typeof SettlementBalanceSchema
   >;
 }

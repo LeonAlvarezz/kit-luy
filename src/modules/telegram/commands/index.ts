@@ -7,6 +7,10 @@ import {
   registerJoinCommand,
   type JoinCommandDependencies,
 } from "./join.command";
+import {
+  registerSettleCommand,
+  type SettleCommandDependencies,
+} from "./settle.command";
 
 type RegisterTelegramMember = (
   chat: TelegramChat,
@@ -17,6 +21,7 @@ export const registerTelegramCommands = (
   bot: Telegraf,
   joinDependencies: JoinCommandDependencies,
   buyDependencies: BuyCommandDependencies,
+  settleDependencies: SettleCommandDependencies,
 ) => {
   bot.start((ctx) => {
     return ctx.reply("Welcome to Kit Luy Bot!");
@@ -28,4 +33,5 @@ export const registerTelegramCommands = (
 
   registerJoinCommand(bot, joinDependencies);
   registerBuyCommand(bot, buyDependencies);
+  registerSettleCommand(bot, settleDependencies);
 };

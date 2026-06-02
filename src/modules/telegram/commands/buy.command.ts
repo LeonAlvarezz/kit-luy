@@ -9,7 +9,7 @@ import { splitEqually, toCents } from "@/modules/purchase/purchase.utils";
 import { runTelegramCommand } from "./command-error";
 import { parseBuyCommand } from "../parsers/buy.parser";
 import { IncorrectTelegramCommand } from "../telegram.error";
-import { isSettlementGroupChat } from "../telegram.utils";
+import { formatMemberName, isSettlementGroupChat } from "../telegram.utils";
 
 export type BuyCommandDependencies = Pick<
   Context.Tag.Service<typeof MemberService>,
@@ -108,9 +108,7 @@ export const registerBuyCommand = (
 
         const beneficiaryLines = beneficiaryAllocations
           .map(({ member, allocation }) => {
-            const name = member.alias
-              ? `@${member.alias}`
-              : (member.display_name ?? `member #${member.id}`);
+            const name = formatMemberName(member);
             const amount = (allocation.amount / 100).toFixed(2);
             return `  • ${name} owes ${amount}`;
           })
@@ -123,6 +121,8 @@ export const registerBuyCommand = (
           ),
         );
       }
+
+      //TODO: Explicit splitting
 
       return yield* Effect.promise(() =>
         ctx.reply(

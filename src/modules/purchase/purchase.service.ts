@@ -1,7 +1,4 @@
 import { DbError } from "@/core/error";
-import { DrizzleService } from "@/lib/db";
-import { purchaseAllocationTable, purchaseTable } from "@/lib/db/schema";
-import { sql } from "drizzle-orm";
 import { Context, Effect, Layer } from "effect";
 import { PurchaseModel } from "./purchase.model";
 import {
@@ -29,6 +26,9 @@ export class PurchaseService extends Context.Tag("PurchaseService")<
       PurchaseModel.WithAllocations,
       DbError | PurchaseAllocationsRequired
     >;
+    findSettlementBalancesByGroupId: (
+      group_id: number,
+    ) => Effect.Effect<PurchaseModel.SettlementBalance[], DbError>;
 
     update: (
       id: number,
@@ -41,7 +41,6 @@ export const PurchaseServiceLive = Layer.effect(
   PurchaseService,
   Effect.gen(function* () {
     const repo = yield* PurchaseRepository;
-    const db = yield* DrizzleService;
 
     return {
       findAll: () =>
@@ -58,32 +57,31 @@ export const PurchaseServiceLive = Layer.effect(
             return yield* Effect.fail(new PurchaseAllocationsRequired());
           }
 
-          return yield* Effect.tryPromise({
-            try: async () => {
-              const insertPurchase = db
-                .insert(purchaseTable)
-                .values(payload.purchase)
-                .returning();
+          return yield* repo.createWithAllocations(payload);
+        }),
+      findSettlementBalancesByGroupId: (group_id) =>
+        Effect.gen(function* () {
+          const purchases = yield* repo.findActivePurchaseByGroupId(group_id);
+          const balancesByMember = new Map<number, number>();
 
-              const insertAllocations = db
-                .insert(purchaseAllocationTable)
-                .values(
-                  payload.allocations.map((allocation) => ({
-                    ...allocation,
-                    purchase_id: sql<number>`(select seq from sqlite_sequence where name = 'purchases')`,
-                  })),
-                )
-                .returning();
+          for (const purchase of purchases) {
+            for (const allocation of purchase.allocations) {
+              balancesByMember.set(
+                purchase.payer_member_id,
+                (balancesByMember.get(purchase.payer_member_id) ?? 0) +
+                  allocation.amount,
+              );
+              balancesByMember.set(
+                allocation.responsible_member_id,
+                (balancesByMember.get(allocation.responsible_member_id) ?? 0) -
+                  allocation.amount,
+              );
+            }
+          }
 
-              const [[purchase], allocations] = await db.batch([
-                insertPurchase,
-                insertAllocations,
-              ]);
-
-              return { purchase, allocations };
-            },
-            catch: (error) => new DbError({ error }),
-          });
+          return [...balancesByMember.entries()]
+            .filter(([, balance]) => balance !== 0)
+            .map(([member_id, balance]) => ({ member_id, balance }));
         }),
       update: (id, payload) =>
         Effect.gen(function* () {

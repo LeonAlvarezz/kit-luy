@@ -6,3 +6,9 @@ export const isSettlementGroupChat = (chat: TelegramChat) =>
 export const isChatMigrationMessage = (message?: object) =>
   !!message &&
   ("migrate_from_chat_id" in message || "migrate_to_chat_id" in message);
+
+export const formatMemberName = (member: {
+  readonly id: number;
+  readonly alias: string | null;
+  readonly display_name: string | null;
+}) => (member.display_name ? member.display_name : `@${member.alias}`);
