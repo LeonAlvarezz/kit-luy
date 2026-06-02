@@ -42,7 +42,7 @@ export const registerBuyCommand = (
         return yield* Effect.fail(
           new IncorrectTelegramCommand({
             command: "/buy",
-            message: "Use /buy inside your Kit Luy group.",
+            message: "Use /buy inside a group.",
           }),
         );
       }

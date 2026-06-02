@@ -14,7 +14,6 @@ import {
 import { registerTelegramCommands } from "./commands";
 import { registerTelegramEvents } from "./events";
 import {
-  toDeactivateTelegramMember,
   toRegisterTelegramMember,
   type TelegramChat,
   type TelegramUser,
@@ -28,6 +27,14 @@ import {
   TelegramSetWebhookFailed,
   TelegramUpdateHandlingFailed,
 } from "./telegram.error";
+import {
+  RepaymentClaimService,
+  RepaymentClaimServiceLive,
+} from "../repayment/repayment-claim.service";
+import {
+  RepaymentService,
+  RepaymentServiceLive,
+} from "../repayment/repayment.service";
 
 export class TelegramService extends Context.Tag("TelegramService")<
   TelegramService,
@@ -49,6 +56,8 @@ export const TelegramServiceLive = Layer.effect(
     const groupService = yield* GroupService;
     const memberService = yield* MemberService;
     const purchaseService = yield* PurchaseService;
+    const repaymentClaimService = yield* RepaymentClaimService;
+    const repaymentService = yield* RepaymentService;
     const token = env.TELEGRAM_BOT_TOKEN;
 
     if (!token) {
@@ -111,12 +120,28 @@ export const TelegramServiceLive = Layer.effect(
         findSettlementBalancesByGroupId:
           purchaseService.findSettlementBalancesByGroupId,
       },
+
+      {
+        findTelegramMember: memberService.findTelegramMember,
+        findActiveByGroupId: memberService.findActiveByGroupId,
+        findSettlementBalancesByGroupId:
+          purchaseService.findSettlementBalancesByGroupId,
+        createRepaymentClaim: repaymentClaimService.create,
+      },
     );
 
     registerTelegramEvents(bot, {
       updateTelegramChatId: groupService.updateTelegramChatId,
       registerTelegramMember: memberService.registerTelegramMember,
       deactivateTelegramMember: memberService.deactivateTelegramMember,
+      repaymentClaimEvents: {
+        confirmClaim: repaymentClaimService.confirmClaim,
+        rejectClaim: repaymentClaimService.rejectClaim,
+        findById: repaymentClaimService.findById,
+        findTelegramMember: memberService.findTelegramMember,
+        createRepaymentFromConfirmedClaim:
+          repaymentService.createFromConfirmedClaim,
+      },
     });
 
     const handleUpdate = (update: any) =>
@@ -147,4 +172,6 @@ export const TelegramServiceLive = Layer.effect(
   Layer.provide(GroupServiceLive),
   Layer.provide(MemberServiceLive),
   Layer.provide(PurchaseServiceLive),
+  Layer.provide(RepaymentClaimServiceLive),
+  Layer.provide(RepaymentServiceLive),
 );

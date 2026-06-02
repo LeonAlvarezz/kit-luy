@@ -9,6 +9,10 @@ import {
   PurchaseRepositoryLive,
   PurchaseRepository,
 } from "./purchase.repository";
+import {
+  RepaymentRepository,
+  RepaymentRepositoryLive,
+} from "../repayment/repayment.repository";
 
 export class PurchaseService extends Context.Tag("PurchaseService")<
   PurchaseService,
@@ -41,6 +45,7 @@ export const PurchaseServiceLive = Layer.effect(
   PurchaseService,
   Effect.gen(function* () {
     const repo = yield* PurchaseRepository;
+    const repaymentRepo = yield* RepaymentRepository;
 
     return {
       findAll: () =>
@@ -61,7 +66,10 @@ export const PurchaseServiceLive = Layer.effect(
         }),
       findSettlementBalancesByGroupId: (group_id) =>
         Effect.gen(function* () {
-          const purchases = yield* repo.findActivePurchaseByGroupId(group_id);
+          const [purchases, repayments] = yield* Effect.all([
+            repo.findActivePurchaseByGroupId(group_id),
+            repaymentRepo.findActiveByGroupId(group_id),
+          ]);
           const balancesByMember = new Map<number, number>();
 
           for (const purchase of purchases) {
@@ -77,6 +85,19 @@ export const PurchaseServiceLive = Layer.effect(
                   allocation.amount,
               );
             }
+          }
+
+          for (const repayment of repayments) {
+            balancesByMember.set(
+              repayment.sender_member_id,
+              (balancesByMember.get(repayment.sender_member_id) ?? 0) +
+                repayment.amount_cents,
+            );
+            balancesByMember.set(
+              repayment.receiver_member_id,
+              (balancesByMember.get(repayment.receiver_member_id) ?? 0) -
+                repayment.amount_cents,
+            );
           }
 
           return [...balancesByMember.entries()]
@@ -105,4 +126,7 @@ export const PurchaseServiceLive = Layer.effect(
         }),
     };
   }),
-).pipe(Layer.provide(PurchaseRepositoryLive));
+).pipe(
+  Layer.provide(PurchaseRepositoryLive),
+  Layer.provide(RepaymentRepositoryLive),
+);

@@ -28,7 +28,7 @@ export const registerSettleCommand = (
         return yield* Effect.fail(
           new IncorrectTelegramCommand({
             command: "/settle",
-            message: "Use /settle inside your Kit Luy group.",
+            message: "Use /settle inside a group.",
           }),
         );
       }
@@ -42,8 +42,6 @@ export const registerSettleCommand = (
         dependencies.findActiveByGroupId(sender.group_id),
         dependencies.findSettlementBalancesByGroupId(sender.group_id),
       ]);
-
-      console.log({ balances });
 
       const memberById = createMemberLookup(members);
       const repayments = calculateRepayments(balances);

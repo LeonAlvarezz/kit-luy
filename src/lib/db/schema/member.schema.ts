@@ -11,6 +11,8 @@ import { groupTable } from "./group.schema";
 import { MEMBER_STATUS } from "@/modules/member/member.model";
 import { purchaseAllocationTable } from "./purchase-allocation.schema";
 import { purchaseTable } from "./purchase.schema";
+import { repaymentClaimTable } from "./repayment-claim.schema";
+import { repaymentTable } from "./repayment.schema";
 
 export const memberTable = sqliteTable(
   "members",
@@ -50,5 +52,20 @@ export const memberRelations = relations(memberTable, ({ one, many }) => ({
   }),
   responsible_allocations: many(purchaseAllocationTable, {
     relationName: "responsible_member",
+  }),
+  sent_repayments: many(repaymentTable, {
+    relationName: "repayment_sender_member",
+  }),
+  received_repayments: many(repaymentTable, {
+    relationName: "repayment_receiver_member",
+  }),
+  confirmed_repayments: many(repaymentTable, {
+    relationName: "repayment_confirmed_by_member",
+  }),
+  sent_repayment_claims: many(repaymentClaimTable, {
+    relationName: "repayment_claim_sender_member",
+  }),
+  received_repayment_claims: many(repaymentClaimTable, {
+    relationName: "repayment_claim_receiver_member",
   }),
 }));

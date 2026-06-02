@@ -15,6 +15,13 @@
       "when": 1780294873904,
       "tag": "0001_purchases_and_purchase_allocations",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1780392398385,
+      "tag": "0002_repayment_and_repayment_claims",
+      "breakpoints": true
     }
   ]
 }

@@ -1,3 +1,5 @@
+import { regex } from "./regex";
+
 export type BuyAllocation = {
   readonly username: string;
   readonly amount: number;
@@ -23,12 +25,6 @@ export type BuyCommandParseResult =
       readonly ok: false;
       readonly message: string;
     };
-
-const regex = {
-  buy: /^\/buy(?:@\w+)?\s+((?:\d+(?:\.\d+)?)|(?:\.\d+))(?:\s+(.+))?$/i,
-  allocation: /@([a-zA-Z0-9_]{1,32})\s*=\s*((?:\d+(?:\.\d+)?)|(?:\.\d+))/g,
-};
-
 export const parseBuyCommand = (text: string): BuyCommandParseResult => {
   const buyMatch = text.match(regex.buy);
 

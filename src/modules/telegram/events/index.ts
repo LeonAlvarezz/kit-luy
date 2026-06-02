@@ -11,6 +11,10 @@ import {
 import { MemberService } from "@/modules/member/member.service";
 import { GroupService } from "@/modules/group/group.service";
 import { InvalidTelegramMemberPayload } from "../telegram.error";
+import {
+  registerRepaymentClaimEvents,
+  type RepaymentClaimEventDependencies,
+} from "./repayment-claim.event";
 
 export type TelegramEventDependency = Pick<
   Context.Tag.Service<typeof MemberService>,
@@ -19,6 +23,8 @@ export type TelegramEventDependency = Pick<
   updateTelegramChatId: Context.Tag.Service<
     typeof GroupService
   >["updateTelegramChatId"];
+} & {
+  repaymentClaimEvents: RepaymentClaimEventDependencies;
 };
 
 export const registerTelegramEvents = (
@@ -29,6 +35,7 @@ export const registerTelegramEvents = (
     updateTelegramChatId,
     registerTelegramMember,
     deactivateTelegramMember,
+    repaymentClaimEvents,
   } = dependencies;
 
   bot.on(message("text"), (ctx) => {
@@ -129,4 +136,6 @@ export const registerTelegramEvents = (
 
     return Effect.runPromise(updateTelegramChatId(oldChatId, newChatId));
   });
+
+  registerRepaymentClaimEvents(bot, repaymentClaimEvents);
 };

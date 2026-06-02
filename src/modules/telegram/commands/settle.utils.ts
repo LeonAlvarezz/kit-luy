@@ -22,10 +22,9 @@ const groupRepaymentsByDebtor = (
   const repaymentsByDebtor = new Map<number, PurchaseModel.Repayment[]>();
 
   for (const repayment of repayments) {
-    const debtorRepayments =
-      repaymentsByDebtor.get(repayment.fromMemberId) ?? [];
+    const debtorRepayments = repaymentsByDebtor.get(repayment.toMemberId) ?? [];
     debtorRepayments.push(repayment);
-    repaymentsByDebtor.set(repayment.fromMemberId, debtorRepayments);
+    repaymentsByDebtor.set(repayment.toMemberId, debtorRepayments);
   }
 
   return repaymentsByDebtor;
@@ -36,7 +35,7 @@ const formatDebtorRepayments = (
   repayments: readonly PurchaseModel.Repayment[],
   memberById: ReadonlyMap<number, MemberModel.Entity>,
 ) =>
-  `+ <b>${getMemberName(memberById, debtorMemberId)}</b>\n${repayments
+  `+ <b>${getMemberName(memberById, debtorMemberId)}</b>  (Creditor)\n${repayments
     .map((repayment) => formatRepaymentLine(repayment, memberById))
     .join("\n")}`;
 
@@ -44,7 +43,7 @@ const formatRepaymentLine = (
   repayment: PurchaseModel.Repayment,
   memberById: ReadonlyMap<number, MemberModel.Entity>,
 ) =>
-  `   - ${getMemberName(memberById, repayment.toMemberId)}\t\t\t\t\t<code>$${formatAmount(repayment.amount)}</code>`;
+  `   - ${getMemberName(memberById, repayment.fromMemberId)}\t\t\t\t\t<code>$${formatAmount(repayment.amount)}</code>`;
 
 const getMemberName = (
   memberById: ReadonlyMap<number, MemberModel.Entity>,
