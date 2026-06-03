@@ -28,9 +28,6 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Apply D1 migrations
-        run: bun run db:migrate --prod
-
       - name: Deploy Worker
         run: bun run deploy
 
