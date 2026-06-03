@@ -57,6 +57,15 @@ export const registerVoidCommand = (
         );
       }
 
+      if (purchase.payer_member_id !== sender.id) {
+        return yield* Effect.fail(
+          new IncorrectTelegramCommand({
+            command: "/void",
+            message: `Only the member who created purchase #${purchaseId} can void it.`,
+          }),
+        );
+      }
+
       if (purchase.status === PurchaseStatus.VOIDED) {
         return yield* Effect.fail(
           new IncorrectTelegramCommand({

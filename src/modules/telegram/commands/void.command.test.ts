@@ -167,6 +167,34 @@ describe("registerVoidCommand", () => {
     expect(replies).toEqual(["Purchase #7 does not belong to this group."]);
   });
 
+  test("rejects purchases created by another member", async () => {
+    const sender = createMember(1, { tg_user_id: "1001", group_id: 10 });
+    const replies: string[] = [];
+    let updateWasCalled = false;
+
+    const voidHandler = setupVoidCommand({
+      findTelegramMember: () => Effect.succeed(sender),
+      findPurchaseById: (id) =>
+        Effect.succeed(
+          createPurchase(id, {
+            group_id: sender.group_id,
+            payer_member_id: 2,
+          }),
+        ),
+      updatePurchase: (id, payload) => {
+        updateWasCalled = true;
+        return Effect.succeed(createPurchase(id, payload));
+      },
+    });
+
+    await voidHandler?.(createVoidContext("/void 7", replies));
+
+    expect(updateWasCalled).toBe(false);
+    expect(replies).toEqual([
+      "Only the member who created purchase #7 can void it.",
+    ]);
+  });
+
   test("rejects already voided purchases", async () => {
     const sender = createMember(1, { tg_user_id: "1001" });
     const replies: string[] = [];
