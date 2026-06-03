@@ -16,6 +16,7 @@ import {
   registerVoidCommand,
   type VoidCommandDependencies,
 } from "./void.command";
+import { registerLangCommand } from "./lang.command";
 
 export const registerTelegramCommands = (
   bot: Telegraf,
@@ -38,4 +39,5 @@ export const registerTelegramCommands = (
   registerPaidCommand(bot, paidCommandDependencies);
   registerListCommand(bot, listCommandDependencies);
   registerVoidCommand(bot, voidCommandDependencies);
+  registerLangCommand(bot);
 };

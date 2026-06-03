@@ -1,7 +1,10 @@
 import { BaseModel } from "@/shared/base";
 import { Schema } from "effect";
 import { CURRENCY } from "@/shared/currency";
-
+export enum GROUP_LANG_ENUM {
+  EN = "en",
+  KH = "kh",
+}
 export namespace GroupModel {
   export const EntitySchema = BaseModel.EntitySchema.pipe(
     Schema.extend(
