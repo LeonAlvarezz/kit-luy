@@ -35,5 +35,5 @@ jobs:
         run: |
           set -euo pipefail
           curl --fail --show-error --silent --output /dev/null --max-time 30 \
-            "${PUBLIC_BASE_URL%/}/telegram/setup/${TELEGRAM_BOT_TOKEN}")
+            "${PUBLIC_BASE_URL%/}/telegram/setup/${TELEGRAM_BOT_TOKEN}"
           echo "Telegram webhook registered"
