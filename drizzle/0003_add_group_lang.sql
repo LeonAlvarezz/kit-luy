@@ -1,0 +1,1 @@
+ALTER TABLE `groups` ADD `language` text DEFAULT 'en' NOT NULL;
