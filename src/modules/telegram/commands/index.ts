@@ -12,6 +12,11 @@ import {
   type SettleCommandDependencies,
 } from "./settle.command";
 import { PaidCommandDependencies, registerPaidCommand } from "./paid.command";
+import { ListCommandDependencies, registerListCommand } from "./list.command";
+import {
+  registerVoidCommand,
+  type VoidCommandDependencies,
+} from "./void.command";
 
 export const registerTelegramCommands = (
   bot: Telegraf,
@@ -19,6 +24,8 @@ export const registerTelegramCommands = (
   buyDependencies: BuyCommandDependencies,
   settleDependencies: SettleCommandDependencies,
   paidCommandDependencies: PaidCommandDependencies,
+  listCommandDependencies: ListCommandDependencies,
+  voidCommandDependencies: VoidCommandDependencies,
 ) => {
   bot.start((ctx) => {
     return ctx.reply("Welcome to Kit Luy Bot!");
@@ -32,4 +39,6 @@ export const registerTelegramCommands = (
   registerBuyCommand(bot, buyDependencies);
   registerSettleCommand(bot, settleDependencies);
   registerPaidCommand(bot, paidCommandDependencies);
+  registerListCommand(bot, listCommandDependencies);
+  registerVoidCommand(bot, voidCommandDependencies);
 };

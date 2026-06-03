@@ -12,6 +12,9 @@ export class PurchaseRepository extends Context.Tag("PurchaseRepository")<
     findById: (
       id: number,
     ) => Effect.Effect<PurchaseModel.Entity | undefined, DbError>;
+    findAllByGroupId: (
+      id: number,
+    ) => Effect.Effect<PurchaseModel.Entity[], DbError>;
     findActivePurchaseByGroupId: (
       group_id: number,
     ) => Effect.Effect<PurchaseModel.EntityWithAllocation[], DbError>;
@@ -43,6 +46,14 @@ export const PurchaseRepositoryLive = Layer.effect(
           try: () =>
             db.query.purchaseTable.findFirst({
               where: eq(purchaseTable.id, id),
+            }),
+          catch: (error) => new DbError({ error }),
+        }),
+      findAllByGroupId: (group_id) =>
+        Effect.tryPromise({
+          try: () =>
+            db.query.purchaseTable.findMany({
+              where: eq(purchaseTable.group_id, group_id),
             }),
           catch: (error) => new DbError({ error }),
         }),

@@ -18,6 +18,9 @@ export class PurchaseService extends Context.Tag("PurchaseService")<
   PurchaseService,
   {
     findAll: () => Effect.Effect<PurchaseModel.Entity[], DbError>;
+    findAllByGroupId: (
+      id: number,
+    ) => Effect.Effect<PurchaseModel.Entity[], DbError | PurchaseNotFound>;
     findById: (
       id: number,
     ) => Effect.Effect<PurchaseModel.Entity, DbError | PurchaseNotFound>;
@@ -52,18 +55,7 @@ export const PurchaseServiceLive = Layer.effect(
         Effect.gen(function* () {
           return yield* repo.findAll();
         }),
-      create: (payload) =>
-        Effect.gen(function* () {
-          return yield* repo.create(payload);
-        }),
-      createWithAllocations: (payload) =>
-        Effect.gen(function* () {
-          if (payload.allocations.length <= 0) {
-            return yield* Effect.fail(new PurchaseAllocationsRequired());
-          }
 
-          return yield* repo.createWithAllocations(payload);
-        }),
       findSettlementBalancesByGroupId: (group_id) =>
         Effect.gen(function* () {
           const [purchases, repayments] = yield* Effect.all([
@@ -123,6 +115,19 @@ export const PurchaseServiceLive = Layer.effect(
             );
           }
           return result;
+        }),
+      findAllByGroupId: (group_id) => repo.findAllByGroupId(group_id),
+      create: (payload) =>
+        Effect.gen(function* () {
+          return yield* repo.create(payload);
+        }),
+      createWithAllocations: (payload) =>
+        Effect.gen(function* () {
+          if (payload.allocations.length <= 0) {
+            return yield* Effect.fail(new PurchaseAllocationsRequired());
+          }
+
+          return yield* repo.createWithAllocations(payload);
         }),
     };
   }),

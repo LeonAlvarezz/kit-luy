@@ -92,7 +92,7 @@ const formatPurchasesReply = ({
 
   const memberById = new Map(members.map((member) => [member.id, member]));
 
-  return `Recent active purchases:\n${activePurchases
+  return `Recent purchases:\n${activePurchases
     .map((purchase) => formatPurchaseLine(purchase, memberById))
     .join("\n")}`;
 };
@@ -122,4 +122,13 @@ const formatPayerName = (
 };
 
 const formatPurchaseDate = (createdAt: number) =>
-  new Date(createdAt).toISOString().slice(0, 10);
+  new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  })
+    .format(new Date(createdAt))
+    .replace(",", "");

@@ -128,6 +128,16 @@ export const TelegramServiceLive = Layer.effect(
           purchaseService.findSettlementBalancesByGroupId,
         createRepaymentClaim: repaymentClaimService.create,
       },
+      {
+        findTelegramMember: memberService.findTelegramMember,
+        findActiveByGroupId: memberService.findActiveByGroupId,
+        findAllPurchaseByGroupId: purchaseService.findAllByGroupId,
+      },
+      {
+        findTelegramMember: memberService.findTelegramMember,
+        findPurchaseById: purchaseService.findById,
+        updatePurchase: purchaseService.update,
+      },
     );
 
     registerTelegramEvents(bot, {
