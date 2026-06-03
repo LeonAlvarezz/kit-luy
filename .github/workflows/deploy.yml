@@ -34,7 +34,6 @@ jobs:
       - name: Register Telegram webhook
         run: |
           set -euo pipefail
-          RESPONSE=$(curl --fail --show-error --silent --max-time 30 \
-            --header "X-Webhook-Secret: ${TELEGRAM_BOT_TOKEN}" \
-            "${PUBLIC_BASE_URL%/}/telegram/setup")
-          echo "Webhook registration response: ${RESPONSE}"
+          curl --fail --show-error --silent --output /dev/null --max-time 30 \
+            "${PUBLIC_BASE_URL%/}/telegram/setup/${TELEGRAM_BOT_TOKEN}")
+          echo "Telegram webhook registered"
