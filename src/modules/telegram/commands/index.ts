@@ -1,8 +1,7 @@
-import { Effect } from "effect";
 import type { Telegraf } from "telegraf";
 
-import type { TelegramChat, TelegramUser } from "../telegram.mapper";
 import { registerBuyCommand, type BuyCommandDependencies } from "./buy.command";
+import { registerHelpCommand } from "./help.command";
 import {
   registerJoinCommand,
   type JoinCommandDependencies,
@@ -31,9 +30,7 @@ export const registerTelegramCommands = (
     return ctx.reply("Welcome to Kit Luy Bot!");
   });
 
-  bot.help((ctx) => {
-    return ctx.reply("Send me any message, and I will echo it back to you.");
-  });
+  registerHelpCommand(bot);
 
   registerJoinCommand(bot, joinDependencies);
   registerBuyCommand(bot, buyDependencies);
