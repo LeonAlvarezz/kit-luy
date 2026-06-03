@@ -23,7 +23,7 @@ export type PaidCommandParseResult =
     }
   | {
       readonly ok: false;
-      readonly message: string;
+      readonly reason: "usage";
     };
 
 export const parsePaidCommand = (text: string): PaidCommandParseResult => {
@@ -32,7 +32,7 @@ export const parsePaidCommand = (text: string): PaidCommandParseResult => {
   if (!paidMatch) {
     return {
       ok: false,
-      message: "Use /paid 2 or /paid @userA=10",
+      reason: "usage",
     };
   }
 
@@ -64,6 +64,6 @@ export const parsePaidCommand = (text: string): PaidCommandParseResult => {
 
   return {
     ok: false,
-    message: "Use /paid 2 or /paid @userA=10",
+    reason: "usage",
   };
 };

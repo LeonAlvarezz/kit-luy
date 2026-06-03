@@ -1,22 +1,53 @@
 import type { Telegraf } from "telegraf";
+import type { Context } from "effect";
+import { Effect } from "effect";
 
-export const TELEGRAM_COMMAND_HELP_MESSAGE = [
-  "Kit Luy commands:",
-  "",
-  "/start - Show the welcome message.",
-  "/join - Register yourself in this settlement group.",
-  "/buy <amount> - Record a purchase split across everyone.",
-  "/buy <amount> @user=amount ... - Record a purchase with explicit splits.",
-  "/paid <amount> - Claim that you paid your next repayment.",
-  "/paid @user=<amount> - Claim that you paid a specific member.",
-  "/settle - Show who should pay whom.",
-  "/list - Show recent active purchases.",
-  "/void <purchase-id> - Void a purchase.",
-  "/help - Show this command list.",
-].join("\n");
+import type { GroupService } from "@/modules/group/group.service";
+import type { MemberService } from "@/modules/member/member.service";
+import { getDefaultLocale, getGroupLocale } from "../lang/group-locale";
+import { isSettlementGroupChat } from "../telegram.utils";
 
-export const registerHelpCommand = (bot: Telegraf) => {
-  bot.help((ctx) => {
-    return ctx.reply(TELEGRAM_COMMAND_HELP_MESSAGE);
+export type HelpCommandDependencies = Pick<
+  Context.Tag.Service<typeof MemberService>,
+  "findTelegramMember"
+> & {
+  findGroupById: Context.Tag.Service<typeof GroupService>["findById"];
+};
+
+export const TELEGRAM_COMMAND_HELP_MESSAGE = getDefaultLocale().help.message();
+
+export const registerHelpCommand = (
+  bot: Telegraf,
+  dependencies?: HelpCommandDependencies,
+) => {
+  bot.help(async (ctx) => {
+    if (
+      !dependencies ||
+      !ctx.chat ||
+      !ctx.from ||
+      !isSettlementGroupChat(ctx.chat)
+    ) {
+      return ctx.reply(getDefaultLocale().help.message());
+    }
+
+    const message = await Effect.runPromise(
+      Effect.gen(function* () {
+        const member = yield* dependencies.findTelegramMember({
+          tg_chat_id: String(ctx.chat?.id),
+          tg_user_id: String(ctx.from?.id),
+        });
+        const t = yield* getGroupLocale(
+          dependencies.findGroupById,
+          member.group_id,
+        );
+        return t.help.message();
+      }).pipe(
+        Effect.catchAll(() =>
+          Effect.succeed(getDefaultLocale().help.message()),
+        ),
+      ),
+    );
+
+    return ctx.reply(message);
   });
 };

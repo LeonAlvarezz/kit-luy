@@ -1,6 +1,4 @@
-export const SUPPORTED_LANGUAGES = ["en", "kh"] as const;
-
-export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
+import { GROUP_LANG_ENUM } from "@/modules/group/group.model";
 
 export type LangCommand =
   | {
@@ -8,7 +6,7 @@ export type LangCommand =
     }
   | {
       readonly type: "set";
-      readonly language: SupportedLanguage;
+      readonly language: GROUP_LANG_ENUM;
     };
 
 export type LangCommandParseResult =
@@ -18,16 +16,17 @@ export type LangCommandParseResult =
     }
   | {
       readonly ok: false;
-      readonly message: string;
+      readonly reason: "usage" | "supported";
     };
 
 const langCommandRegex = /^\/lang(?:@\w+)?(?:\s+(.+))?$/i;
-const languageByInput = new Map<string, SupportedLanguage>([
-  ["en", "en"],
-  ["english", "en"],
-  ["kh", "kh"],
-  ["khmer", "kh"],
-  ["ខ្មែរ", "kh"],
+
+const languageByInput = new Map<string, GROUP_LANG_ENUM>([
+  [GROUP_LANG_ENUM.EN, GROUP_LANG_ENUM.EN],
+  ["english", GROUP_LANG_ENUM.EN],
+  [GROUP_LANG_ENUM.KH, GROUP_LANG_ENUM.KH],
+  ["khmer", GROUP_LANG_ENUM.KH],
+  ["ខ្មែរ", GROUP_LANG_ENUM.KH],
 ]);
 
 export const parseLangCommand = (text: string): LangCommandParseResult => {
@@ -36,7 +35,7 @@ export const parseLangCommand = (text: string): LangCommandParseResult => {
   if (!langMatch) {
     return {
       ok: false,
-      message: "Use /lang, /lang en, or /lang kh.",
+      reason: "usage",
     };
   }
 
@@ -56,7 +55,7 @@ export const parseLangCommand = (text: string): LangCommandParseResult => {
   if (!language) {
     return {
       ok: false,
-      message: "Supported languages are en and kh.",
+      reason: "supported",
     };
   }
 

@@ -2,6 +2,7 @@ import { Context, Effect } from "effect";
 import type { Telegraf } from "telegraf";
 
 import type { MemberService } from "@/modules/member/member.service";
+import type { GroupService } from "@/modules/group/group.service";
 import { AllocationKind } from "@/modules/purchase/purchase-allocation.model";
 import {
   PurchaseAllocationTotalMismatch,
@@ -17,11 +18,13 @@ import { runTelegramCommand } from "./command-error";
 import { parseBuyCommand } from "../parsers/buy.parser";
 import { IncorrectTelegramCommand } from "../telegram.error";
 import { isSettlementGroupChat } from "../telegram.utils";
+import { getDefaultLocale, getGroupLocale } from "../lang/group-locale";
 
 export type BuyCommandDependencies = Pick<
   Context.Tag.Service<typeof MemberService>,
   "findTelegramMember" | "findActiveByGroupId"
 > & {
+  findGroupById: Context.Tag.Service<typeof GroupService>["findById"];
   createPurchaseWithAllocations: Context.Tag.Service<
     typeof PurchaseService
   >["createWithAllocations"];
@@ -36,10 +39,14 @@ export const registerBuyCommand = (
       const result = parseBuyCommand(ctx.message.text);
 
       if (!result.ok) {
+        const t = getDefaultLocale();
         return yield* Effect.fail(
           new IncorrectTelegramCommand({
             command: "/buy",
-            message: result.message,
+            message:
+              result.reason === "usage"
+                ? t.buy.usage()
+                : t.buy.allocationUsage(),
           }),
         );
       }
@@ -48,7 +55,9 @@ export const registerBuyCommand = (
         return yield* Effect.fail(
           new IncorrectTelegramCommand({
             command: "/buy",
-            message: "Use /buy inside a group.",
+            message: getDefaultLocale().command.useInGroup({
+              command: "/buy",
+            }),
           }),
         );
       }
@@ -61,6 +70,7 @@ export const registerBuyCommand = (
         tg_chat_id: tgChatId,
         tg_user_id: tgUserId,
       });
+      const t = yield* getGroupLocale(dependencies.findGroupById, sender.group_id);
       const members = yield* dependencies.findActiveByGroupId(sender.group_id);
 
       if (command.type === "all") {
@@ -72,8 +82,7 @@ export const registerBuyCommand = (
           return yield* Effect.fail(
             new PurchaseNoActiveMembers({
               tg_chat_id: tgChatId,
-              message:
-                "There are no other active members in this settlement group.",
+              message: t.buy.noOtherActiveMembers(),
             }),
           );
         }
@@ -106,6 +115,7 @@ export const registerBuyCommand = (
         });
 
         const replyMessage = formatBuyAllReply({
+          t,
           purchaseId: result.purchase.id,
           totalAmount,
           payer: sender,
@@ -136,6 +146,9 @@ export const registerBuyCommand = (
           return yield* Effect.fail(
             new PurchaseDuplicateBeneficiary({
               username: allocation.username,
+              message: t.buy.duplicateBeneficiary({
+                username: allocation.username,
+              }),
             }),
           );
         }
@@ -153,6 +166,7 @@ export const registerBuyCommand = (
           new PurchaseAllocationTotalMismatch({
             totalAmount,
             allocationTotal,
+            message: t.buy.allocationTotalMismatch(),
           }),
         );
       }
@@ -164,6 +178,9 @@ export const registerBuyCommand = (
           return yield* Effect.fail(
             new PurchaseBeneficiaryNotFound({
               username: allocation.username,
+              message: t.buy.beneficiaryNotFound({
+                username: allocation.username,
+              }),
             }),
           );
         }
@@ -202,6 +219,7 @@ export const registerBuyCommand = (
       );
 
       const replyMessage = formatBuyAllReply({
+        t,
         purchaseId: createdPurchase.purchase.id,
         totalAmount,
         payer: sender,
@@ -219,7 +237,7 @@ export const registerBuyCommand = (
       ctx,
       {
         command: "/buy",
-        fallbackMessage: "Could not record this purchase.",
+        fallbackMessage: getDefaultLocale().buy.fallback(),
       },
       commandFlow,
     );

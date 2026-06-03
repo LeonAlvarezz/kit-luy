@@ -23,7 +23,7 @@ export type BuyCommandParseResult =
     }
   | {
       readonly ok: false;
-      readonly message: string;
+      readonly reason: "usage" | "allocationUsage";
     };
 export const parseBuyCommand = (text: string): BuyCommandParseResult => {
   const buyMatch = text.match(regex.buy);
@@ -31,7 +31,7 @@ export const parseBuyCommand = (text: string): BuyCommandParseResult => {
   if (!buyMatch) {
     return {
       ok: false,
-      message: "Use /buy 4.5 or /buy 4.5 @userA=2 @userB=2.5",
+      reason: "usage",
     };
   }
 
@@ -62,7 +62,7 @@ export const parseBuyCommand = (text: string): BuyCommandParseResult => {
   if (allocations.length === 0 || unmatchedAllocationText) {
     return {
       ok: false,
-      message: "Use allocations like @userA=2 @userB=2.5 after the amount.",
+      reason: "allocationUsage",
     };
   }
 

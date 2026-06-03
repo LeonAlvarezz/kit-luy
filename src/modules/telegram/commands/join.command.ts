@@ -14,6 +14,7 @@ import {
 import { isSettlementGroupChat } from "../telegram.utils";
 import { runTelegramCommand } from "./command-error";
 import { MemberService } from "@/modules/member/member.service";
+import { getDefaultLocale } from "../lang/group-locale";
 
 export type JoinCommandDependencies = {
   readonly registerTelegramMember: Context.Tag.Service<
@@ -27,11 +28,12 @@ export const registerJoinCommand = (
 ) => {
   bot.command("join", async (ctx) => {
     const commandFlow = Effect.gen(function* () {
+      const t = getDefaultLocale();
       if (!ctx.chat || !ctx.from || !isSettlementGroupChat(ctx.chat)) {
         return yield* Effect.fail(
           new IncorrectTelegramCommand({
             command: "/join",
-            message: "Use /join inside your Kit Luy group.",
+            message: t.command.useInKitLuyGroup({ command: "/join" }),
           }),
         );
       }
@@ -55,7 +57,7 @@ export const registerJoinCommand = (
         Effect.zipRight(
           Effect.tryPromise({
             try: () =>
-              ctx.reply("You are registered in this settlement group."),
+              ctx.reply(t.join.registered()),
             catch: () => new TelegramReplyFailed({ command: "/join" }),
           }),
         ),
@@ -66,7 +68,7 @@ export const registerJoinCommand = (
       ctx,
       {
         command: "/join",
-        fallbackMessage: "Could not register you in this settlement group.",
+        fallbackMessage: getDefaultLocale().join.fallback(),
       },
       commandFlow,
     );

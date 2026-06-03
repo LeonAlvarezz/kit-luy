@@ -5,6 +5,7 @@ import { runTelegramCommand } from "./command-error";
 import { Context, Effect } from "effect";
 import { IncorrectTelegramCommand } from "../telegram.error";
 import { isSettlementGroupChat } from "../telegram.utils";
+import type { GroupService } from "@/modules/group/group.service";
 import { MemberService } from "@/modules/member/member.service";
 import { PurchaseService } from "@/modules/purchase/purchase.service";
 import {
@@ -14,11 +15,13 @@ import {
 import { RepaymentClaimService } from "@/modules/repayment/repayment-claim.service";
 import { RepaymentClaimStatus } from "@/modules/repayment/repayment-claim.model";
 import { formatAmount } from "@/shared/currency";
+import { getDefaultLocale, getGroupLocale } from "../lang/group-locale";
 
 export type PaidCommandDependencies = Pick<
   Context.Tag.Service<typeof MemberService>,
   "findTelegramMember" | "findActiveByGroupId"
 > & {
+  findGroupById: Context.Tag.Service<typeof GroupService>["findById"];
   findSettlementBalancesByGroupId: Context.Tag.Service<
     typeof PurchaseService
   >["findSettlementBalancesByGroupId"];
@@ -37,7 +40,7 @@ export const registerPaidCommand = (
         return yield* Effect.fail(
           new IncorrectTelegramCommand({
             command: "/paid",
-            message: result.message,
+            message: getDefaultLocale().paid.usage(),
           }),
         );
       }
@@ -46,7 +49,9 @@ export const registerPaidCommand = (
         return yield* Effect.fail(
           new IncorrectTelegramCommand({
             command: "/paid",
-            message: "Use /paid inside a group.",
+            message: getDefaultLocale().command.useInGroup({
+              command: "/paid",
+            }),
           }),
         );
       }
@@ -57,6 +62,7 @@ export const registerPaidCommand = (
         tg_chat_id: String(ctx.chat.id),
         tg_user_id: String(ctx.from.id),
       });
+      const t = yield* getGroupLocale(dependencies.findGroupById, sender.group_id);
 
       const balances = yield* dependencies.findSettlementBalancesByGroupId(
         sender.group_id,
@@ -68,7 +74,7 @@ export const registerPaidCommand = (
 
       if (repayments.length <= 0) {
         return yield* Effect.promise(() =>
-          ctx.reply("You don't have anything to settle."),
+          ctx.reply(t.paid.nothingToSettle()),
         );
       }
 
@@ -89,7 +95,9 @@ export const registerPaidCommand = (
                 return yield* Effect.fail(
                   new IncorrectTelegramCommand({
                     command: "/paid",
-                    message: `Could not find @${command.username} in this group.`,
+                    message: t.paid.receiverNotFound({
+                      username: command.username,
+                    }),
                   }),
                 );
               }
@@ -102,7 +110,9 @@ export const registerPaidCommand = (
                 return yield* Effect.fail(
                   new IncorrectTelegramCommand({
                     command: "/paid",
-                    message: `You don't have anything to settle with @${command.username}.`,
+                    message: t.paid.nothingToSettleWith({
+                      username: command.username,
+                    }),
                   }),
                 );
               }
@@ -116,7 +126,7 @@ export const registerPaidCommand = (
         return yield* Effect.fail(
           new IncorrectTelegramCommand({
             command: "/paid",
-            message: "You cannot claim more than you owe.",
+            message: t.paid.claimTooMuch(),
           }),
         );
       }
@@ -132,19 +142,20 @@ export const registerPaidCommand = (
 
       return yield* Effect.promise(() =>
         ctx.reply(
-          `Repayment claim #${repaymentClaim.id} created for $${formatAmount(
-            amountCents,
-          )}. Waiting for confirmation.`,
+          t.paid.claimCreated({
+            claimId: repaymentClaim.id,
+            amount: formatAmount(amountCents),
+          }),
           {
             reply_markup: {
               inline_keyboard: [
                 [
                   {
-                    text: "Accept",
+                    text: t.paid.accept(),
                     callback_data: `repayment_claim:accept:${repaymentClaim.id}`,
                   },
                   {
-                    text: "Reject",
+                    text: t.paid.reject(),
                     callback_data: `repayment_claim:reject:${repaymentClaim.id}`,
                   },
                 ],
@@ -159,7 +170,7 @@ export const registerPaidCommand = (
       ctx,
       {
         command: "/paid",
-        fallbackMessage: "Could not process paid command",
+        fallbackMessage: getDefaultLocale().paid.fallback(),
       },
       commandFlow,
     );

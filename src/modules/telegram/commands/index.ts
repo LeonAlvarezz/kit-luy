@@ -1,7 +1,7 @@
 import type { Telegraf } from "telegraf";
 
 import { registerBuyCommand, type BuyCommandDependencies } from "./buy.command";
-import { registerHelpCommand } from "./help.command";
+import { registerHelpCommand, type HelpCommandDependencies } from "./help.command";
 import {
   registerJoinCommand,
   type JoinCommandDependencies,
@@ -16,22 +16,25 @@ import {
   registerVoidCommand,
   type VoidCommandDependencies,
 } from "./void.command";
-import { registerLangCommand } from "./lang.command";
+import { LangCommandDependencies, registerLangCommand } from "./lang.command";
+import { getDefaultLocale } from "../lang/group-locale";
 
 export const registerTelegramCommands = (
   bot: Telegraf,
   joinDependencies: JoinCommandDependencies,
+  helpDependencies: HelpCommandDependencies,
   buyDependencies: BuyCommandDependencies,
   settleDependencies: SettleCommandDependencies,
   paidCommandDependencies: PaidCommandDependencies,
   listCommandDependencies: ListCommandDependencies,
   voidCommandDependencies: VoidCommandDependencies,
+  langCommandDependencies: LangCommandDependencies,
 ) => {
   bot.start((ctx) => {
-    return ctx.reply("Welcome to Kit Luy Bot!");
+    return ctx.reply(getDefaultLocale().bot.welcome());
   });
 
-  registerHelpCommand(bot);
+  registerHelpCommand(bot, helpDependencies);
 
   registerJoinCommand(bot, joinDependencies);
   registerBuyCommand(bot, buyDependencies);
@@ -39,5 +42,5 @@ export const registerTelegramCommands = (
   registerPaidCommand(bot, paidCommandDependencies);
   registerListCommand(bot, listCommandDependencies);
   registerVoidCommand(bot, voidCommandDependencies);
-  registerLangCommand(bot);
+  registerLangCommand(bot, langCommandDependencies);
 };

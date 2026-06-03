@@ -2,10 +2,12 @@ import { Cause, Context, Effect } from "effect";
 import type { Telegraf } from "telegraf";
 
 import { getErrorMessage } from "@/core/error/app-error";
+import type { GroupService } from "@/modules/group/group.service";
 import type { MemberService } from "@/modules/member/member.service";
 import type { RepaymentClaimService } from "@/modules/repayment/repayment-claim.service";
 import type { RepaymentService } from "@/modules/repayment/repayment.service";
 import { IncorrectTelegramCommand } from "../telegram.error";
+import { getDefaultLocale, getGroupLocale } from "../lang/group-locale";
 import { isSettlementGroupChat } from "../telegram.utils";
 
 type RepaymentClaimAction = "accept" | "reject";
@@ -18,6 +20,7 @@ export type RepaymentClaimEventDependencies = Pick<
     Context.Tag.Service<typeof RepaymentClaimService>,
     "findById" | "confirmClaim" | "rejectClaim"
   > & {
+    findGroupById: Context.Tag.Service<typeof GroupService>["findById"];
     createRepaymentFromConfirmedClaim: Context.Tag.Service<
       typeof RepaymentService
     >["createFromConfirmedClaim"];
@@ -33,7 +36,7 @@ export const registerRepaymentClaimEvents = (
         return yield* Effect.fail(
           new IncorrectTelegramCommand({
             command: "repayment_claim",
-            message: "Use repayment claim actions inside a group.",
+            message: getDefaultLocale().repaymentClaim.useInGroup(),
           }),
         );
       }
@@ -48,13 +51,13 @@ export const registerRepaymentClaimEvents = (
         }),
         dependencies.findById(claimId),
       ]);
+      const t = yield* getGroupLocale(dependencies.findGroupById, member.group_id);
 
       if (member.id !== claim.receiver_member_id) {
         return yield* Effect.fail(
           new IncorrectTelegramCommand({
             command: "repayment_claim",
-            message:
-              "Only the repayment receiver can accept or reject this claim.",
+            message: t.repaymentClaim.onlyReceiver(),
           }),
         );
       }
@@ -73,13 +76,16 @@ export const registerRepaymentClaimEvents = (
 
       const statusText =
         action === "accept"
-          ? "Repayment claim accepted."
-          : "Repayment claim rejected.";
+          ? t.repaymentClaim.accepted()
+          : t.repaymentClaim.rejected();
 
       return yield* Effect.promise(async () => {
         await ctx.answerCbQuery(statusText);
         await ctx.editMessageText(
-          `Repayment claim #${updatedClaim.id} ${updatedClaim.status}.`,
+          t.repaymentClaim.status({
+            claimId: updatedClaim.id,
+            status: updatedClaim.status,
+          }),
         );
       });
     });
@@ -90,7 +96,7 @@ export const registerRepaymentClaimEvents = (
           const error = Cause.squash(cause);
           const message = getErrorMessage(
             error,
-            "Could not process repayment claim action.",
+            getDefaultLocale().repaymentClaim.fallback(),
           );
 
           return Effect.promise(() =>

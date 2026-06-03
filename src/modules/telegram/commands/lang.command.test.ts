@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
+import { GROUP_LANG_ENUM } from "@/modules/group/group.model";
 import { parseLangCommand } from "../parsers/lang.parser";
 
 describe("parseLangCommand", () => {
@@ -17,7 +18,7 @@ describe("parseLangCommand", () => {
       ok: true,
       command: {
         type: "set",
-        language: "en",
+        language: GROUP_LANG_ENUM.EN,
       },
     });
 
@@ -25,7 +26,7 @@ describe("parseLangCommand", () => {
       ok: true,
       command: {
         type: "set",
-        language: "en",
+        language: GROUP_LANG_ENUM.EN,
       },
     });
   });
@@ -35,7 +36,7 @@ describe("parseLangCommand", () => {
       ok: true,
       command: {
         type: "set",
-        language: "kh",
+        language: GROUP_LANG_ENUM.KH,
       },
     });
 
@@ -43,7 +44,7 @@ describe("parseLangCommand", () => {
       ok: true,
       command: {
         type: "set",
-        language: "kh",
+        language: GROUP_LANG_ENUM.KH,
       },
     });
   });
@@ -51,14 +52,14 @@ describe("parseLangCommand", () => {
   test("rejects unsupported language values", () => {
     expect(parseLangCommand("/lang fr")).toEqual({
       ok: false,
-      message: "Supported languages are en and kh.",
+      reason: "supported",
     });
   });
 
   test("rejects non-lang commands", () => {
     expect(parseLangCommand("/language kh")).toEqual({
       ok: false,
-      message: "Use /lang, /lang en, or /lang kh.",
+      reason: "usage",
     });
   });
 });

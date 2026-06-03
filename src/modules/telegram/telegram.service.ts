@@ -111,12 +111,18 @@ export const TelegramServiceLive = Layer.effect(
       },
       {
         findTelegramMember: memberService.findTelegramMember,
+        findGroupById: groupService.findById,
+      },
+      {
+        findTelegramMember: memberService.findTelegramMember,
         findActiveByGroupId: memberService.findActiveByGroupId,
+        findGroupById: groupService.findById,
         createPurchaseWithAllocations: purchaseService.createWithAllocations,
       },
       {
         findTelegramMember: memberService.findTelegramMember,
         findActiveByGroupId: memberService.findActiveByGroupId,
+        findGroupById: groupService.findById,
         findSettlementBalancesByGroupId:
           purchaseService.findSettlementBalancesByGroupId,
       },
@@ -124,6 +130,7 @@ export const TelegramServiceLive = Layer.effect(
       {
         findTelegramMember: memberService.findTelegramMember,
         findActiveByGroupId: memberService.findActiveByGroupId,
+        findGroupById: groupService.findById,
         findSettlementBalancesByGroupId:
           purchaseService.findSettlementBalancesByGroupId,
         createRepaymentClaim: repaymentClaimService.create,
@@ -131,12 +138,19 @@ export const TelegramServiceLive = Layer.effect(
       {
         findTelegramMember: memberService.findTelegramMember,
         findActiveByGroupId: memberService.findActiveByGroupId,
+        findGroupById: groupService.findById,
         findAllPurchaseByGroupId: purchaseService.findAllByGroupId,
       },
       {
         findTelegramMember: memberService.findTelegramMember,
+        findGroupById: groupService.findById,
         findPurchaseById: purchaseService.findById,
         updatePurchase: purchaseService.update,
+      },
+      {
+        findTelegramMember: memberService.findTelegramMember,
+        findByGroupId: groupService.findById,
+        updateGroupLang: groupService.updateLang,
       },
     );
 
@@ -148,6 +162,7 @@ export const TelegramServiceLive = Layer.effect(
         confirmClaim: repaymentClaimService.confirmClaim,
         rejectClaim: repaymentClaimService.rejectClaim,
         findById: repaymentClaimService.findById,
+        findGroupById: groupService.findById,
         findTelegramMember: memberService.findTelegramMember,
         createRepaymentFromConfirmedClaim:
           repaymentService.createFromConfirmedClaim,

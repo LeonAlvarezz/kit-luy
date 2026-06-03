@@ -12,6 +12,7 @@ export namespace GroupModel {
         tg_chat_id: Schema.String,
         title: Schema.String,
         currency: Schema.Enums(CURRENCY),
+        language: Schema.Enums(GROUP_LANG_ENUM),
       }),
     ),
   );
