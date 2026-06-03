@@ -59,7 +59,7 @@ const kh = {
   },
   settle: {
     allClear: "រួចរាល់ មិនត្រូវមានការទូទាត់ឡើយ",
-    header: "ការទូទាត់ត្រូវបញ្ចប់:",
+    header: "តារាងទូទាត់ប្រាក់:",
     creditor: "ម្ចាស់បំណុល",
     repaymentLine:
       "   - {member:string}\t\t\t\t\t<code>${amount:string}</code>",
