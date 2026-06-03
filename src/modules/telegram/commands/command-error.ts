@@ -8,6 +8,7 @@ import {
   logAppError,
 } from "@/core/error/app-error";
 import { LoggerLive } from "@/lib/logger";
+import { getDefaultLocale } from "../lang/group-locale";
 
 export const logAndReplyCommandError =
   (
@@ -19,9 +20,10 @@ export const logAndReplyCommandError =
   ) =>
   (cause: Cause.Cause<unknown>) => {
     const error = Cause.squash(cause);
+    const t = getDefaultLocale();
     const message = getErrorMessage(
       error,
-      options.fallbackMessage ?? "Command failed.",
+      options.fallbackMessage ?? t.command.failed(),
     );
 
     return logAppError(cause, {

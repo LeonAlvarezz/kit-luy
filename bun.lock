@@ -7,8 +7,13 @@
       "dependencies": {
         "@effect/platform": "^0.96.1",
         "drizzle-orm": "^0.45.2",
-        "effect": "^3.21.2",
-        "telegraf": "^4.16.3",
+        {
+          "adapter": "node",
+          "esmImports": true,
+          "baseLocale": "en",
+          "outputPath": "./src/modules/telegram/i18n/",
+          "$schema": "https://unpkg.com/typesafe-i18n@5.27.1/schema/typesafe-i18n.json"
+        }        "typesafe-i18n": "^5.27.1",
       },
       "devDependencies": {
         "@cloudflare/workers-types": "^4.20260511.1",
@@ -350,7 +355,9 @@
 
     "tsx": ["tsx@4.22.4", "", { "dependencies": { "esbuild": "~0.28.0" }, "optionalDependencies": { "fsevents": "~2.3.3" }, "bin": { "tsx": "dist/cli.mjs" } }, "sha512-X8EX+XV4QR5xCsrgxaED954zTDfY8KqlDtskKEL0cHhyS/P8b4IFOvGDQpsC9Q1XnLq915wEfwwY/zzskCtmhg=="],
 
-    "tunnel-agent": ["tunnel-agent@0.6.0", "", { "dependencies": { "safe-buffer": "^5.0.1" } }, "sha512-McnNiV1l8RYeY8tBgEpuodCC1mLUdbSN+CYBL7kJsJNInOP8UjDDEwdk6Mw60vdLLrr5NHKZhMAOSrR2NZuQ+w=="],
+    "typesafe-i18n": ["typesafe-i18n@5.27.1", "", { "peerDependencies": { "typescript": ">=3.5.1" }, "bin": { "typesafe-i18n": "cli/typesafe-i18n.mjs" } }, "sha512-749uWo2ZXETT//kWjVYPm8QPYR8xLh8G0wLfoAyCAtAmysX67uCaAyLjAjAWojL6fuJpE5B6yIjwvO9orXzUPg=="],
+
+    "typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
 
     "undici": ["undici@7.24.8", "", {}, "sha512-6KQ/+QxK49Z/p3HO6E5ZCZWNnCasyZLa5ExaVYyvPxUwKtbCPMKELJOqh7EqOle0t9cH/7d2TaaTRRa6Nhs4YQ=="],
 

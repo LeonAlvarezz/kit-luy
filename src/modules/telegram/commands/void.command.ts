@@ -1,10 +1,12 @@
 import { Context, Effect } from "effect";
 import type { Telegraf } from "telegraf";
 
+import type { GroupService } from "@/modules/group/group.service";
 import { MemberService } from "@/modules/member/member.service";
 import { PurchaseStatus } from "@/modules/purchase/purchase.model";
 import { PurchaseService } from "@/modules/purchase/purchase.service";
 import { IncorrectTelegramCommand } from "../telegram.error";
+import { getDefaultLocale, getGroupLocale } from "../lang/group-locale";
 import { isSettlementGroupChat } from "../telegram.utils";
 import { runTelegramCommand } from "./command-error";
 
@@ -12,6 +14,7 @@ export type VoidCommandDependencies = Pick<
   Context.Tag.Service<typeof MemberService>,
   "findTelegramMember"
 > & {
+  findGroupById: Context.Tag.Service<typeof GroupService>["findById"];
   findPurchaseById: Context.Tag.Service<typeof PurchaseService>["findById"];
   updatePurchase: Context.Tag.Service<typeof PurchaseService>["update"];
 };
@@ -28,7 +31,7 @@ export const registerVoidCommand = (
         return yield* Effect.fail(
           new IncorrectTelegramCommand({
             command: "/void",
-            message: "Use /void <purchase-id>.",
+            message: getDefaultLocale().void.usage(),
           }),
         );
       }
@@ -37,7 +40,9 @@ export const registerVoidCommand = (
         return yield* Effect.fail(
           new IncorrectTelegramCommand({
             command: "/void",
-            message: "Use /void inside a group.",
+            message: getDefaultLocale().command.useInGroup({
+              command: "/void",
+            }),
           }),
         );
       }
@@ -46,13 +51,14 @@ export const registerVoidCommand = (
         tg_chat_id: String(ctx.chat.id),
         tg_user_id: String(ctx.from.id),
       });
+      const t = yield* getGroupLocale(dependencies.findGroupById, sender.group_id);
       const purchase = yield* dependencies.findPurchaseById(purchaseId);
 
       if (purchase.group_id !== sender.group_id) {
         return yield* Effect.fail(
           new IncorrectTelegramCommand({
             command: "/void",
-            message: `Purchase #${purchaseId} does not belong to this group.`,
+            message: t.void.wrongGroup({ purchaseId }),
           }),
         );
       }
@@ -61,7 +67,7 @@ export const registerVoidCommand = (
         return yield* Effect.fail(
           new IncorrectTelegramCommand({
             command: "/void",
-            message: `Only the member who created purchase #${purchaseId} can void it.`,
+            message: t.void.onlyCreator({ purchaseId }),
           }),
         );
       }
@@ -70,7 +76,7 @@ export const registerVoidCommand = (
         return yield* Effect.fail(
           new IncorrectTelegramCommand({
             command: "/void",
-            message: `Purchase #${purchaseId} is already voided.`,
+            message: t.void.alreadyVoided({ purchaseId }),
           }),
         );
       }
@@ -81,7 +87,7 @@ export const registerVoidCommand = (
       });
 
       return yield* Effect.promise(() =>
-        ctx.reply(`Purchase #${voidedPurchase.id} voided.`),
+        ctx.reply(t.void.voided({ purchaseId: voidedPurchase.id })),
       );
     });
 
@@ -89,7 +95,7 @@ export const registerVoidCommand = (
       ctx,
       {
         command: "/void",
-        fallbackMessage: "Could not void this purchase.",
+        fallbackMessage: getDefaultLocale().void.fallback(),
       },
       commandFlow,
     );

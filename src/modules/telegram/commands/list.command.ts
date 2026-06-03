@@ -1,4 +1,5 @@
 import type { MemberModel } from "@/modules/member/member.model";
+import type { GroupService } from "@/modules/group/group.service";
 import { MemberService } from "@/modules/member/member.service";
 import {
   PurchaseStatus,
@@ -10,6 +11,8 @@ import { Context, Effect } from "effect";
 import { Telegraf } from "telegraf";
 import { runTelegramCommand } from "./command-error";
 import { IncorrectTelegramCommand } from "../telegram.error";
+import type { TranslationFunctions } from "../lang/i18n-types";
+import { getDefaultLocale, getGroupLocale } from "../lang/group-locale";
 import {
   escapeHtml,
   formatMemberName,
@@ -22,6 +25,7 @@ export type ListCommandDependencies = Pick<
   Context.Tag.Service<typeof MemberService>,
   "findTelegramMember" | "findActiveByGroupId"
 > & {
+  findGroupById: Context.Tag.Service<typeof GroupService>["findById"];
   findAllPurchaseByGroupId: Context.Tag.Service<
     typeof PurchaseService
   >["findAllByGroupId"];
@@ -37,7 +41,9 @@ export const registerListCommand = (
         return yield* Effect.fail(
           new IncorrectTelegramCommand({
             command: "/list",
-            message: "Use /list inside a group.",
+            message: getDefaultLocale().command.useInGroup({
+              command: "/list",
+            }),
           }),
         );
       }
@@ -48,13 +54,14 @@ export const registerListCommand = (
         tg_chat_id: tgChatId,
         tg_user_id: tgUserId,
       });
+      const t = yield* getGroupLocale(dependencies.findGroupById, sender.group_id);
 
       const purchases = yield* dependencies.findAllPurchaseByGroupId(
         sender.group_id,
       );
 
       const members = yield* dependencies.findActiveByGroupId(sender.group_id);
-      const replyMessage = formatPurchasesReply({ purchases, members });
+      const replyMessage = formatPurchasesReply({ t, purchases, members });
 
       return yield* Effect.promise(() =>
         ctx.reply(replyMessage, {
@@ -67,7 +74,7 @@ export const registerListCommand = (
       ctx,
       {
         command: "/list",
-        fallbackMessage: "Could not list purchases.",
+        fallbackMessage: getDefaultLocale().list.fallback(),
       },
       commandFlow,
     );
@@ -75,9 +82,11 @@ export const registerListCommand = (
 };
 
 const formatPurchasesReply = ({
+  t,
   purchases,
   members,
 }: {
+  readonly t: TranslationFunctions;
   readonly purchases: readonly PurchaseModel.Entity[];
   readonly members: readonly MemberModel.Entity[];
 }) => {
@@ -87,37 +96,39 @@ const formatPurchasesReply = ({
     .slice(0, PURCHASE_LIST_LIMIT);
 
   if (activePurchases.length <= 0) {
-    return "No active purchases found.";
+    return t.list.empty();
   }
 
   const memberById = new Map(members.map((member) => [member.id, member]));
 
-  return `Recent purchases:\n${activePurchases
-    .map((purchase) => formatPurchaseLine(purchase, memberById))
+  return `${t.list.header()}\n${activePurchases
+    .map((purchase) => formatPurchaseLine(t, purchase, memberById))
     .join("\n")}`;
 };
 
 const formatPurchaseLine = (
+  t: TranslationFunctions,
   purchase: PurchaseModel.Entity,
   memberById: ReadonlyMap<number, MemberModel.Entity>,
 ) =>
-  `   - #<code>${purchase.id}</code> ${formatPurchaseAmount(
-    purchase,
-  )} paid by ${formatPayerName(purchase, memberById)} on ${formatPurchaseDate(
-    purchase.created_at,
-  )}`;
-
-const formatPurchaseAmount = (purchase: PurchaseModel.Entity) =>
-  `<code>$${formatAmount(purchase.amount)}</code>`;
+  t.list.purchaseLine({
+    purchaseId: purchase.id,
+    amount: formatAmount(purchase.amount),
+    payer: formatPayerName(t, purchase, memberById),
+    date: formatPurchaseDate(purchase.created_at),
+  });
 
 const formatPayerName = (
+  t: TranslationFunctions,
   purchase: PurchaseModel.Entity,
   memberById: ReadonlyMap<number, MemberModel.Entity>,
 ) => {
   const payer = memberById.get(purchase.payer_member_id);
 
   return escapeHtml(
-    payer ? formatMemberName(payer) : `member #${purchase.payer_member_id}`,
+    payer
+      ? formatMemberName(payer)
+      : t.list.unknownMember({ memberId: purchase.payer_member_id }),
   );
 };
 

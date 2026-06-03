@@ -1,6 +1,7 @@
 import type { MemberModel } from "@/modules/member/member.model";
 import type { PurchaseAllocationModel } from "@/modules/purchase/purchase-allocation.model";
 import { formatAmount } from "@/shared/currency";
+import type { TranslationFunctions } from "../lang/i18n-types";
 import { escapeHtml, formatMemberName } from "../telegram.utils";
 
 export type BeneficiaryAllocation = {
@@ -12,6 +13,7 @@ export type BeneficiaryAllocation = {
 };
 
 type FormatBuyAllReplyParams = {
+  readonly t: TranslationFunctions;
   readonly purchaseId: number;
   readonly totalAmount: number;
   readonly payer: MemberModel.Entity;
@@ -19,30 +21,40 @@ type FormatBuyAllReplyParams = {
 };
 
 export const formatBuyAllReply = ({
+  t,
   purchaseId,
   totalAmount,
   payer,
   beneficiaryAllocations,
 }: FormatBuyAllReplyParams) =>
-  `Purchase #${purchaseId} created: <code>$${formatAmount(
-    totalAmount,
-  )}</code> paid by <b>${formatMember(payer)}</b>.\n\n` +
-  `Beneficiaries:\n${formatBeneficiaryAllocations(beneficiaryAllocations)}`;
+  `${t.buy.created({
+    purchaseId,
+    amount: formatAmount(totalAmount),
+    payer: formatMember(payer),
+  })}\n\n${t.buy.beneficiaries()}\n${formatBeneficiaryAllocations(
+    t,
+    beneficiaryAllocations,
+  )}`;
 
 const formatBeneficiaryAllocations = (
+  t: TranslationFunctions,
   beneficiaryAllocations: readonly BeneficiaryAllocation[],
 ) =>
   beneficiaryAllocations
-    .map(({ member, allocation }) => formatBeneficiaryLine(member, allocation))
+    .map(({ member, allocation }) =>
+      formatBeneficiaryLine(t, member, allocation),
+    )
     .join("\n");
 
 const formatBeneficiaryLine = (
+  t: TranslationFunctions,
   member: MemberModel.Entity,
   allocation: Pick<PurchaseAllocationModel.CreateForPurchase, "amount">,
 ) =>
-  `   - ${formatMember(member)}\t\t\t\t\t<code>$${formatAmount(
-    allocation.amount,
-  )}</code>`;
+  t.buy.beneficiaryLine({
+    member: formatMember(member),
+    amount: formatAmount(allocation.amount),
+  });
 
 const formatMember = (member: MemberModel.Entity) =>
   escapeHtml(formatMemberName(member));

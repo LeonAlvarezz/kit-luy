@@ -15,6 +15,7 @@ import {
   registerRepaymentClaimEvents,
   type RepaymentClaimEventDependencies,
 } from "./repayment-claim.event";
+import { getDefaultLocale } from "../lang/group-locale";
 
 export type TelegramEventDependency = Pick<
   Context.Tag.Service<typeof MemberService>,
@@ -37,14 +38,6 @@ export const registerTelegramEvents = (
     deactivateTelegramMember,
     repaymentClaimEvents,
   } = dependencies;
-
-  bot.on(message("text"), (ctx) => {
-    if (ctx.message.text.startsWith("/")) {
-      return;
-    }
-
-    return ctx.reply(`You said: ${ctx.message.text}`);
-  });
 
   bot.on(message("new_chat_members"), async (ctx) => {
     const membersToRegister = ctx.message.new_chat_members.filter(
@@ -80,12 +73,10 @@ export const registerTelegramEvents = (
 
     return Effect.runPromise(registerNewMembers).then(() => {
       if (botWasAdded) {
-        return ctx.reply(
-          "Thanks for adding Kit Luy. Telegram does not let bots import the existing member list, so I will register members when they send a message here. Ask everyone to send /join once.",
-        );
+        return ctx.reply(getDefaultLocale().bot.added());
       }
 
-      return ctx.reply("New group members registered.");
+      return ctx.reply(getDefaultLocale().bot.newMembersRegistered());
     });
   });
 

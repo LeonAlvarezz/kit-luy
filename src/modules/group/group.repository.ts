@@ -1,5 +1,5 @@
 import { Context, Effect, Layer } from "effect";
-import { GroupModel } from "./group.model";
+import { GROUP_LANG_ENUM, GroupModel } from "./group.model";
 import { DbError } from "@/core/error";
 import { DrizzleService } from "@/lib/db";
 import { groupTable, memberTable } from "@/lib/db/schema";
@@ -9,6 +9,9 @@ export class GroupRepository extends Context.Tag("GroupRepository")<
   GroupRepository,
   {
     findAll: () => Effect.Effect<GroupModel.Entity[], DbError>;
+    findById: (
+      id: number,
+    ) => Effect.Effect<GroupModel.Entity | undefined, DbError>;
     create: (
       payload: GroupModel.Create,
     ) => Effect.Effect<GroupModel.Entity, DbError>;
@@ -27,6 +30,10 @@ export class GroupRepository extends Context.Tag("GroupRepository")<
       duplicateGroupId: number;
       newChatId: string;
     }) => Effect.Effect<GroupModel.Entity | undefined, DbError>;
+    updateLang: (
+      lang: GROUP_LANG_ENUM,
+      id: number,
+    ) => Effect.Effect<GroupModel.Entity, DbError>;
     delete: (id: number) => Effect.Effect<GroupModel.Entity, DbError>;
   }
 >() {}
@@ -39,6 +46,15 @@ export const GroupRepositoryLive = Layer.effect(
       findAll: () =>
         Effect.tryPromise({
           try: () => db.query.groupTable.findMany(),
+          catch: (error) => new DbError({ error }),
+        }),
+
+      findById: (id) =>
+        Effect.tryPromise({
+          try: () =>
+            db.query.groupTable.findFirst({
+              where: eq(groupTable.id, id),
+            }),
           catch: (error) => new DbError({ error }),
         }),
       create: (payload) =>
@@ -114,6 +130,21 @@ export const GroupRepositoryLive = Layer.effect(
             return result;
           },
           catch: (error) => new DbError({ error }),
+        }),
+      updateLang: (lang, id) =>
+        Effect.gen(function* () {
+          const [result] = yield* Effect.tryPromise({
+            try: () =>
+              db
+                .update(groupTable)
+                .set({
+                  language: lang,
+                })
+                .where(eq(groupTable.id, id))
+                .returning(),
+            catch: (error) => new DbError({ error }),
+          });
+          return result;
         }),
       delete: (id) =>
         Effect.gen(function* () {

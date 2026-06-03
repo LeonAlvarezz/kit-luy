@@ -1,12 +1,15 @@
 import { DbError } from "@/core/error";
 import { Context, Effect, Layer } from "effect";
-import { GroupModel } from "./group.model";
+import { GROUP_LANG_ENUM, GroupModel } from "./group.model";
 import { GroupRepository, GroupRepositoryLive } from "./group.repository";
 
 export class GroupService extends Context.Tag("GroupService")<
   GroupService,
   {
     findAllGroups: () => Effect.Effect<GroupModel.Entity[], DbError>;
+    findById: (
+      id: number,
+    ) => Effect.Effect<GroupModel.Entity | undefined, DbError>;
     createGroup: (
       payload: GroupModel.Create,
     ) => Effect.Effect<GroupModel.Entity, DbError>;
@@ -15,6 +18,10 @@ export class GroupService extends Context.Tag("GroupService")<
       newChatId: string,
     ) => Effect.Effect<GroupModel.Entity | undefined, DbError>;
     deleteGroupById: (id: number) => Effect.Effect<GroupModel.Entity, DbError>;
+    updateLang: (
+      lang: GROUP_LANG_ENUM,
+      id: number,
+    ) => Effect.Effect<GroupModel.Entity, DbError>;
   }
 >() {}
 
@@ -27,10 +34,12 @@ export const GroupServiceLive = Layer.effect(
         Effect.gen(function* () {
           return yield* repo.findAll();
         }),
+      findById: (id) => repo.findById(id),
       createGroup: (payload) =>
         Effect.gen(function* () {
           return yield* repo.create(payload);
         }),
+
       updateTelegramChatId: (oldChatId, newChatId) =>
         Effect.gen(function* () {
           const oldGroup = yield* repo.findByTelegramChatId(oldChatId);
@@ -50,6 +59,7 @@ export const GroupServiceLive = Layer.effect(
 
           return yield* repo.updateTelegramChatIdById(oldGroup.id, newChatId);
         }),
+      updateLang: (lang, id) => repo.updateLang(lang, id),
       deleteGroupById: (id) =>
         Effect.gen(function* () {
           return yield* repo.delete(id);

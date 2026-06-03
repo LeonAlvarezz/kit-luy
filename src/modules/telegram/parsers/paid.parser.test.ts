@@ -38,12 +38,12 @@ describe("parsePaidCommand", () => {
   it("rejects malformed paid commands", () => {
     expect(parsePaidCommand("/paid")).toEqual({
       ok: false,
-      message: "Use /paid 2 or /paid @userA=10",
+      reason: "usage",
     });
 
     expect(parsePaidCommand("/paid @userA 10")).toEqual({
       ok: false,
-      message: "Use /paid 2 or /paid @userA=10",
+      reason: "usage",
     });
   });
 });
