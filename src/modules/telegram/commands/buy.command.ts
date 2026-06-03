@@ -2,11 +2,17 @@ import { Context, Effect } from "effect";
 import type { Telegraf } from "telegraf";
 
 import type { MemberService } from "@/modules/member/member.service";
-import { PurchaseNoActiveMembers } from "@/modules/purchase/purchase.error";
+import { AllocationKind } from "@/modules/purchase/purchase-allocation.model";
+import {
+  PurchaseAllocationTotalMismatch,
+  PurchaseBeneficiaryNotFound,
+  PurchaseDuplicateBeneficiary,
+  PurchaseNoActiveMembers,
+} from "@/modules/purchase/purchase.error";
 import { PurchaseStatus } from "@/modules/purchase/purchase.model";
 import type { PurchaseService } from "@/modules/purchase/purchase.service";
 import { splitEqually, toCents } from "@/modules/purchase/purchase.utils";
-import { formatBuyAllReply } from "./buy.utils";
+import { formatBuyAllReply, type BeneficiaryAllocation } from "./buy.utils";
 import { runTelegramCommand } from "./command-error";
 import { parseBuyCommand } from "../parsers/buy.parser";
 import { IncorrectTelegramCommand } from "../telegram.error";
@@ -49,19 +55,15 @@ export const registerBuyCommand = (
 
       const { command } = result;
 
+      const tgChatId = String(ctx.chat.id);
+      const tgUserId = String(ctx.from.id);
+      const sender = yield* dependencies.findTelegramMember({
+        tg_chat_id: tgChatId,
+        tg_user_id: tgUserId,
+      });
+      const members = yield* dependencies.findActiveByGroupId(sender.group_id);
+
       if (command.type === "all") {
-        const tgChatId = String(ctx.chat.id);
-        const tgUserId = String(ctx.from.id);
-
-        const sender = yield* dependencies.findTelegramMember({
-          tg_chat_id: tgChatId,
-          tg_user_id: tgUserId,
-        });
-
-        const members = yield* dependencies.findActiveByGroupId(
-          sender.group_id,
-        );
-
         const beneficiaries = members.filter(
           (member) => member.id !== sender.id,
         );
@@ -117,14 +119,99 @@ export const registerBuyCommand = (
         );
       }
 
-      //TODO: Explicit splitting
+      // Explicit
+      // Filter out null alias and map in one go
+      const membersByAlias = new Map(
+        members.flatMap((member) =>
+          member.alias ? [[member.alias.toLowerCase(), member]] : [],
+        ),
+      );
+
+      // Find Duplicate User
+      const seenUsernames = new Set<string>();
+      for (const allocation of command.allocations) {
+        const username = allocation.username.toLowerCase();
+
+        if (seenUsernames.has(username)) {
+          return yield* Effect.fail(
+            new PurchaseDuplicateBeneficiary({
+              username: allocation.username,
+            }),
+          );
+        }
+        seenUsernames.add(username);
+      }
+
+      const totalAmount = toCents(command.totalAmount);
+      const allocationTotal = command.allocations.reduce(
+        (sum, allocation) => sum + toCents(allocation.amount),
+        0,
+      );
+
+      if (allocationTotal !== totalAmount) {
+        return yield* Effect.fail(
+          new PurchaseAllocationTotalMismatch({
+            totalAmount,
+            allocationTotal,
+          }),
+        );
+      }
+
+      const allocationsByMember: BeneficiaryAllocation[] = [];
+      for (const allocation of command.allocations) {
+        const member = membersByAlias.get(allocation.username.toLowerCase());
+        if (!member) {
+          return yield* Effect.fail(
+            new PurchaseBeneficiaryNotFound({
+              username: allocation.username,
+            }),
+          );
+        }
+
+        allocationsByMember.push({
+          member,
+          allocation: {
+            amount: toCents(allocation.amount),
+            allocation_kind: AllocationKind.EXPLICIT,
+          },
+        });
+      }
+
+      const beneficiaryAllocations = allocationsByMember.filter(
+        ({ member }) => member.id !== sender.id,
+      );
+
+      const createdPurchase = yield* dependencies.createPurchaseWithAllocations(
+        {
+          purchase: {
+            group_id: sender.group_id,
+            payer_member_id: sender.id,
+            tg_message_id: ctx.message.message_id,
+            amount: totalAmount,
+            note: null,
+            status: PurchaseStatus.ACTIVE,
+            created_at: Date.now(),
+          },
+          allocations: beneficiaryAllocations.map(({ member, allocation }) => ({
+            beneficiary_member_id: member.id,
+            responsible_member_id: member.id,
+            amount: allocation.amount,
+            allocation_kind: allocation.allocation_kind,
+          })),
+        },
+      );
+
+      const replyMessage = formatBuyAllReply({
+        purchaseId: createdPurchase.purchase.id,
+        totalAmount,
+        payer: sender,
+        beneficiaryAllocations,
+      });
 
       return yield* Effect.promise(() =>
-        ctx.reply(
-          `Buy command received: ${command.totalAmount} split between ${command.allocations
-            .map(({ username, amount }) => `@${username}=${amount}`)
-            .join(" ")}.`,
-        ),
+        ctx.reply(replyMessage, {
+          parse_mode: "HTML",
+        }),
       );
     });
 

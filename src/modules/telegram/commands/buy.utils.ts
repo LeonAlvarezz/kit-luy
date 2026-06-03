@@ -3,9 +3,12 @@ import type { PurchaseAllocationModel } from "@/modules/purchase/purchase-alloca
 import { formatAmount } from "@/shared/currency";
 import { escapeHtml, formatMemberName } from "../telegram.utils";
 
-type BeneficiaryAllocation = {
+export type BeneficiaryAllocation = {
   readonly member: MemberModel.Entity;
-  readonly allocation: Pick<PurchaseAllocationModel.CreateForPurchase, "amount">;
+  readonly allocation: Pick<
+    PurchaseAllocationModel.CreateForPurchase,
+    "amount" | "allocation_kind"
+  >;
 };
 
 type FormatBuyAllReplyParams = {
