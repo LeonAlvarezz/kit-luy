@@ -24,7 +24,7 @@ const handlersByEnv = new WeakMap<
 const telegramWebhookStartupByEnv = new WeakMap<Bindings, Promise<void>>();
 
 const getTelegramWebhookUrl = (env: Bindings) => {
-  const baseUrl = env.NGROK_URL?.trim().replace(/\/+$/, "");
+  const baseUrl = env.PUBLIC_BASE_URL?.trim().replace(/\/+$/, "");
   const token = env.TELEGRAM_BOT_TOKEN?.trim();
 
   if (!baseUrl || !token) {
@@ -47,7 +47,7 @@ const setupTelegramWebhookOnStartup = (env: Bindings) =>
 
     if (!webhookUrl) {
       yield* Ef.log(
-        "telegram webhook setup skipped: NGROK_URL or TELEGRAM_BOT_TOKEN is missing",
+        "telegram webhook setup skipped: PUBLIC_BASE_URL or TELEGRAM_BOT_TOKEN is missing",
       );
       return;
     }
