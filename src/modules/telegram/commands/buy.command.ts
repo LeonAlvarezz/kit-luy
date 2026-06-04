@@ -16,6 +16,7 @@ import { splitEqually, toCents } from "@/modules/purchase/purchase.utils";
 import { formatBuyAllReply, type BeneficiaryAllocation } from "./buy.utils";
 import { runTelegramCommand } from "./command-error";
 import { parseBuyCommand } from "../parsers/buy.parser";
+import type { BuyAllocation } from "../parsers/buy.parser";
 import { IncorrectTelegramCommand } from "../telegram.error";
 import { isSettlementGroupChat } from "../telegram.utils";
 import { getDefaultLocale, getGroupLocale } from "../lang/group-locale";
@@ -156,8 +157,12 @@ export const registerBuyCommand = (
       }
 
       const totalAmount = toCents(command.totalAmount);
-      const allocationTotal = command.allocations.reduce(
-        (sum, allocation) => sum + toCents(allocation.amount),
+      const resolvedAllocations = command.allocations.map((allocation) => ({
+        ...allocation,
+        amount: resolveBuyAllocationAmount(allocation, totalAmount),
+      }));
+      const allocationTotal = resolvedAllocations.reduce(
+        (sum, allocation) => sum + allocation.amount,
         0,
       );
 
@@ -172,7 +177,7 @@ export const registerBuyCommand = (
       }
 
       const allocationsByMember: BeneficiaryAllocation[] = [];
-      for (const allocation of command.allocations) {
+      for (const allocation of resolvedAllocations) {
         const member = membersByAlias.get(allocation.username.toLowerCase());
         if (!member) {
           return yield* Effect.fail(
@@ -188,7 +193,7 @@ export const registerBuyCommand = (
         allocationsByMember.push({
           member,
           allocation: {
-            amount: toCents(allocation.amount),
+            amount: allocation.amount,
             allocation_kind: AllocationKind.EXPLICIT,
           },
         });
@@ -253,4 +258,17 @@ export const registerBuyCommand = (
       commandFlow,
     );
   });
+};
+
+const resolveBuyAllocationAmount = (
+  allocation: BuyAllocation,
+  totalAmount: number,
+) => {
+  if (allocation.value.type === "amount") {
+    return toCents(allocation.value.amount);
+  }
+
+  return Math.round(
+    (totalAmount * allocation.value.numerator) / allocation.value.denominator,
+  );
 };

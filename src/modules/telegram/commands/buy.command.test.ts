@@ -56,8 +56,14 @@ const createBuyContext = (
   }) as unknown as TelegrafContext;
 
 describe("registerBuyCommand", () => {
+  type BuyCommandTestDependencies = Omit<
+    Parameters<typeof registerBuyCommand>[1],
+    "findGroupById"
+  > &
+    Partial<Pick<Parameters<typeof registerBuyCommand>[1], "findGroupById">>;
+
   const setupBuyCommand = (
-    dependencies: Parameters<typeof registerBuyCommand>[1],
+    dependencies: BuyCommandTestDependencies,
   ) => {
     let buyHandler:
       | ((ctx: TelegrafContext) => Promise<unknown> | unknown)
@@ -69,8 +75,12 @@ describe("registerBuyCommand", () => {
         }
       },
     } as unknown as Telegraf;
+    const fullDependencies: Parameters<typeof registerBuyCommand>[1] = {
+      findGroupById: () => Effect.succeed(undefined),
+      ...dependencies,
+    };
 
-    registerBuyCommand(bot, dependencies);
+    registerBuyCommand(bot, fullDependencies);
 
     expect(buyHandler).toBeDefined();
     return buyHandler;
@@ -254,6 +264,93 @@ describe("registerBuyCommand", () => {
       "Purchase #3 created: <code>$4.00</code> paid by <b>Member 1</b>.\n\nBeneficiaries:\n   - Member 2\t\t\t\t\t<code>$3.00</code>",
     ]);
     expect(replyOptions).toEqual([{ parse_mode: "HTML" }]);
+  });
+
+  test("creates a fractional allocation and gives the remainder to the sender", async () => {
+    const payer = createMember(1, { tg_user_id: "1001", alias: "payer" });
+    const dara = createMember(2, { alias: "dara" });
+    let createdPayload: PurchaseModel.CreateWithAllocations | undefined;
+    const replies: string[] = [];
+    const replyOptions: unknown[] = [];
+
+    const buyHandler = setupBuyCommand({
+      findTelegramMember: () => Effect.succeed(payer),
+      findActiveByGroupId: () => Effect.succeed([payer, dara]),
+      createPurchaseWithAllocations: (payload) => {
+        createdPayload = payload;
+        return Effect.succeed({
+          purchase: {
+            id: 4,
+            ...payload.purchase,
+            voided_at: null,
+          },
+          allocations: payload.allocations.map((allocation, index) => ({
+            id: index + 1,
+            purchase_id: 4,
+            ...allocation,
+          })),
+        });
+      },
+    });
+
+    await buyHandler?.(
+      createBuyContext("/buy 5 @dara=1/4", 1001, replies, replyOptions),
+    );
+
+    expect(createdPayload?.purchase).toMatchObject({
+      payer_member_id: payer.id,
+      amount: 500,
+      status: PurchaseStatus.ACTIVE,
+    });
+    expect(createdPayload?.allocations).toEqual([
+      {
+        beneficiary_member_id: dara.id,
+        responsible_member_id: dara.id,
+        amount: 125,
+        allocation_kind: AllocationKind.EXPLICIT,
+      },
+    ]);
+    expect(replies).toEqual([
+      "Purchase #4 created: <code>$5.00</code> paid by <b>Member 1</b>.\n\nBeneficiaries:\n   - Member 2\t\t\t\t\t<code>$1.25</code>",
+    ]);
+    expect(replyOptions).toEqual([{ parse_mode: "HTML" }]);
+  });
+
+  test("rounds fractional allocations to cents", async () => {
+    const payer = createMember(1, { tg_user_id: "1001", alias: "payer" });
+    const dara = createMember(2, { alias: "dara" });
+    let createdPayload: PurchaseModel.CreateWithAllocations | undefined;
+
+    const buyHandler = setupBuyCommand({
+      findTelegramMember: () => Effect.succeed(payer),
+      findActiveByGroupId: () => Effect.succeed([payer, dara]),
+      createPurchaseWithAllocations: (payload) => {
+        createdPayload = payload;
+        return Effect.succeed({
+          purchase: {
+            id: 5,
+            ...payload.purchase,
+            voided_at: null,
+          },
+          allocations: payload.allocations.map((allocation, index) => ({
+            id: index + 1,
+            purchase_id: 5,
+            ...allocation,
+          })),
+        });
+      },
+    });
+
+    await buyHandler?.(createBuyContext("/buy 5 @dara=1/3", 1001));
+
+    expect(createdPayload?.allocations).toEqual([
+      {
+        beneficiary_member_id: dara.id,
+        responsible_member_id: dara.id,
+        amount: 167,
+        allocation_kind: AllocationKind.EXPLICIT,
+      },
+    ]);
   });
 
   test("rejects explicit allocations that exceed the purchase total", async () => {

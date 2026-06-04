@@ -40,7 +40,7 @@ type RootTranslation = {
 	​/​s​t​a​r​t​ ​-​ ​S​h​o​w​ ​t​h​e​ ​w​e​l​c​o​m​e​ ​m​e​s​s​a​g​e​.​
 	​/​j​o​i​n​ ​-​ ​R​e​g​i​s​t​e​r​ ​y​o​u​r​s​e​l​f​ ​i​n​ ​t​h​i​s​ ​s​e​t​t​l​e​m​e​n​t​ ​g​r​o​u​p​.​
 	​/​b​u​y​ ​<​a​m​o​u​n​t​>​ ​-​ ​R​e​c​o​r​d​ ​a​ ​p​u​r​c​h​a​s​e​ ​s​p​l​i​t​ ​a​c​r​o​s​s​ ​e​v​e​r​y​o​n​e​.​
-	​/​b​u​y​ ​<​a​m​o​u​n​t​>​ ​@​u​s​e​r​=​a​m​o​u​n​t​ ​.​.​.​ ​-​ ​R​e​c​o​r​d​ ​a​ ​p​u​r​c​h​a​s​e​ ​w​i​t​h​ ​e​x​p​l​i​c​i​t​ ​s​p​l​i​t​s​.​
+	​/​b​u​y​ ​<​a​m​o​u​n​t​>​ ​@​u​s​e​r​=​a​m​o​u​n​t​|​f​r​a​c​t​i​o​n​ ​.​.​.​ ​-​ ​R​e​c​o​r​d​ ​a​ ​p​u​r​c​h​a​s​e​ ​w​i​t​h​ ​e​x​p​l​i​c​i​t​ ​s​p​l​i​t​s​.​
 	​/​p​a​i​d​ ​<​a​m​o​u​n​t​>​ ​-​ ​C​l​a​i​m​ ​t​h​a​t​ ​y​o​u​ ​p​a​i​d​ ​y​o​u​r​ ​n​e​x​t​ ​r​e​p​a​y​m​e​n​t​.​
 	​/​p​a​i​d​ ​@​u​s​e​r​=​<​a​m​o​u​n​t​>​ ​-​ ​C​l​a​i​m​ ​t​h​a​t​ ​y​o​u​ ​p​a​i​d​ ​a​ ​s​p​e​c​i​f​i​c​ ​m​e​m​b​e​r​.​
 	​/​s​e​t​t​l​e​ ​-​ ​S​h​o​w​ ​w​h​o​ ​s​h​o​u​l​d​ ​p​a​y​ ​w​h​o​m​.​
@@ -102,11 +102,11 @@ type RootTranslation = {
 	}
 	buy: {
 		/**
-		 * U​s​e​ ​/​b​u​y​ ​4​.​5​ ​o​r​ ​/​b​u​y​ ​4​.​5​ ​@​u​s​e​r​A​=​2​ ​@​u​s​e​r​B​=​2​.​5
+		 * U​s​e​ ​/​b​u​y​ ​4​.​5​ ​o​r​ ​/​b​u​y​ ​4​.​5​ ​@​u​s​e​r​A​=​2​ ​@​u​s​e​r​B​=​1​/​4
 		 */
 		usage: string
 		/**
-		 * U​s​e​ ​a​l​l​o​c​a​t​i​o​n​s​ ​l​i​k​e​ ​@​u​s​e​r​A​=​2​ ​@​u​s​e​r​B​=​2​.​5​ ​a​f​t​e​r​ ​t​h​e​ ​a​m​o​u​n​t​.
+		 * U​s​e​ ​a​l​l​o​c​a​t​i​o​n​s​ ​l​i​k​e​ ​@​u​s​e​r​A​=​2​ ​@​u​s​e​r​B​=​1​/​4​ ​a​f​t​e​r​ ​t​h​e​ ​a​m​o​u​n​t​.
 		 */
 		allocationUsage: string
 		/**
@@ -124,7 +124,7 @@ type RootTranslation = {
 		 */
 		beneficiaryNotFound: RequiredParams<'username'>
 		/**
-		 * E​x​p​l​i​c​i​t​ ​a​l​l​o​c​a​t​i​o​n​s​ ​m​u​s​t​ ​a​d​d​ ​u​p​ ​t​o​ ​t​h​e​ ​p​u​r​c​h​a​s​e​ ​t​o​t​a​l​.
+		 * E​x​p​l​i​c​i​t​ ​a​l​l​o​c​a​t​i​o​n​s​ ​c​a​n​n​o​t​ ​e​x​c​e​e​d​ ​t​h​e​ ​p​u​r​c​h​a​s​e​ ​t​o​t​a​l​.
 		 */
 		allocationTotalMismatch: string
 		/**
@@ -328,7 +328,7 @@ export type TranslationFunctions = {
 	/start - Show the welcome message.
 	/join - Register yourself in this settlement group.
 	/buy <amount> - Record a purchase split across everyone.
-	/buy <amount> @user=amount ... - Record a purchase with explicit splits.
+	/buy <amount> @user=amount|fraction ... - Record a purchase with explicit splits.
 	/paid <amount> - Claim that you paid your next repayment.
 	/paid @user=<amount> - Claim that you paid a specific member.
 	/settle - Show who should pay whom.
@@ -386,11 +386,11 @@ export type TranslationFunctions = {
 	}
 	buy: {
 		/**
-		 * Use /buy 4.5 or /buy 4.5 @userA=2 @userB=2.5
+		 * Use /buy 4.5 or /buy 4.5 @userA=2 @userB=1/4
 		 */
 		usage: () => LocalizedString
 		/**
-		 * Use allocations like @userA=2 @userB=2.5 after the amount.
+		 * Use allocations like @userA=2 @userB=1/4 after the amount.
 		 */
 		allocationUsage: () => LocalizedString
 		/**
@@ -406,7 +406,7 @@ export type TranslationFunctions = {
 		 */
 		beneficiaryNotFound: (arg: { username: string }) => LocalizedString
 		/**
-		 * Explicit allocations must add up to the purchase total.
+		 * Explicit allocations cannot exceed the purchase total.
 		 */
 		allocationTotalMismatch: () => LocalizedString
 		/**

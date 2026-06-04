@@ -1,8 +1,19 @@
 import { regex } from "./regex";
 
+export type BuyAllocationValue =
+  | {
+      readonly type: "amount";
+      readonly amount: number;
+    }
+  | {
+      readonly type: "fraction";
+      readonly numerator: number;
+      readonly denominator: number;
+    };
+
 export type BuyAllocation = {
   readonly username: string;
-  readonly amount: number;
+  readonly value: BuyAllocationValue;
 };
 
 export type BuyCommand =
@@ -48,12 +59,22 @@ export const parseBuyCommand = (text: string): BuyCommandParseResult => {
     };
   }
 
-  const allocations = [...allocationText.matchAll(regex.allocation)].map(
-    (match) => ({
+  const allocations: BuyAllocation[] = [];
+  for (const match of allocationText.matchAll(regex.allocation)) {
+    const value = parseAllocationValue(match[2]);
+
+    if (!value) {
+      return {
+        ok: false,
+        reason: "allocationUsage",
+      };
+    }
+
+    allocations.push({
       username: match[1],
-      amount: Number(match[2]),
-    }),
-  );
+      value,
+    });
+  }
 
   const unmatchedAllocationText = allocationText
     .replace(regex.allocation, "")
@@ -73,5 +94,39 @@ export const parseBuyCommand = (text: string): BuyCommandParseResult => {
       totalAmount,
       allocations,
     },
+  };
+};
+
+const parseAllocationValue = (
+  rawValue: string | undefined,
+): BuyAllocationValue | null => {
+  if (!rawValue) {
+    return null;
+  }
+
+  if (rawValue.includes("/")) {
+    const [rawNumerator, rawDenominator] = rawValue.split("/");
+    const numerator = Number(rawNumerator);
+    const denominator = Number(rawDenominator);
+
+    if (
+      !Number.isInteger(numerator) ||
+      !Number.isInteger(denominator) ||
+      numerator <= 0 ||
+      denominator <= 0
+    ) {
+      return null;
+    }
+
+    return {
+      type: "fraction",
+      numerator,
+      denominator,
+    };
+  }
+
+  return {
+    type: "amount",
+    amount: Number(rawValue),
   };
 };
