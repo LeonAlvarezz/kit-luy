@@ -161,7 +161,7 @@ export const registerBuyCommand = (
         0,
       );
 
-      if (allocationTotal !== totalAmount) {
+      if (allocationTotal > totalAmount) {
         return yield* Effect.fail(
           new PurchaseAllocationTotalMismatch({
             totalAmount,
@@ -190,6 +190,17 @@ export const registerBuyCommand = (
           allocation: {
             amount: toCents(allocation.amount),
             allocation_kind: AllocationKind.EXPLICIT,
+          },
+        });
+      }
+
+      const senderRemainder = totalAmount - allocationTotal;
+      if (senderRemainder > 0) {
+        allocationsByMember.push({
+          member: sender,
+          allocation: {
+            amount: senderRemainder,
+            allocation_kind: AllocationKind.INFERRED,
           },
         });
       }

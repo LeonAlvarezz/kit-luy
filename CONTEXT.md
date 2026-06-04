@@ -181,7 +181,7 @@ Dev: "How should the bot handle an equal Allocation that does not divide cleanly
 Domain expert: "The total must stay exact. Any Rounding Remainder goes to the Payer if they are a Beneficiary; otherwise it goes to the first listed Beneficiary."
 
 Dev: "Can explicit Allocations add up to a different Amount than the Purchase total?"
-Domain expert: "No. Explicit Allocations must add up exactly to the Purchase Amount."
+Domain expert: "They cannot exceed the Purchase Amount. If explicit Allocations are less than the Purchase Amount, the remaining Amount is inferred as the Payer's own share."
 
 Dev: "Can the bot infer a missing explicit Allocation?"
 Domain expert: "Yes, but only for one Beneficiary. The Inferred Allocation is the remaining Amount after other explicit Allocations."
@@ -196,10 +196,10 @@ Dev: "Can one Member record a Purchase paid by another Member?"
 Domain expert: "No. In the first version, the Member who sends the Purchase Entry is always the Payer."
 
 Dev: "Is the Payer automatically a Beneficiary?"
-Domain expert: "No. Beneficiaries are explicit unless the Purchase Entry uses the All Members shortcut."
+Domain expert: "For explicit Allocations, only the unallocated remainder is automatically treated as the Payer's own share. Otherwise, Beneficiaries are explicit unless the Purchase Entry uses the All Members shortcut."
 
 Dev: "If the Payer also benefited from a Purchase, must they be mentioned?"
-Domain expert: "Yes. The Payer must be listed as a Beneficiary unless the Purchase Entry uses the All Members shortcut."
+Domain expert: "No. In explicit Allocation entries, any unallocated remainder is treated as the Payer's own share so the Payer does not need to mention themselves."
 
 Dev: "If Dara says they will cover Bob's $3 share, who owes the Payer?"
 Domain expert: "That is not supported in the first version. The Responsible Member is the Beneficiary."

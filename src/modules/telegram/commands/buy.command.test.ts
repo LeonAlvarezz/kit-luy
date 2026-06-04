@@ -205,4 +205,84 @@ describe("registerBuyCommand", () => {
     ]);
     expect(replyOptions).toEqual([{ parse_mode: "HTML" }]);
   });
+
+  test("allocates the explicit remainder to the sender", async () => {
+    const payer = createMember(1, { tg_user_id: "1001", alias: "payer" });
+    const john = createMember(2, { alias: "john" });
+    let createdPayload: PurchaseModel.CreateWithAllocations | undefined;
+    const replies: string[] = [];
+    const replyOptions: unknown[] = [];
+
+    const buyHandler = setupBuyCommand({
+      findTelegramMember: () => Effect.succeed(payer),
+      findActiveByGroupId: () => Effect.succeed([payer, john]),
+      createPurchaseWithAllocations: (payload) => {
+        createdPayload = payload;
+        return Effect.succeed({
+          purchase: {
+            id: 3,
+            ...payload.purchase,
+            voided_at: null,
+          },
+          allocations: payload.allocations.map((allocation, index) => ({
+            id: index + 1,
+            purchase_id: 3,
+            ...allocation,
+          })),
+        });
+      },
+    });
+
+    await buyHandler?.(
+      createBuyContext("/buy 4 @john=3", 1001, replies, replyOptions),
+    );
+
+    expect(createdPayload?.purchase).toMatchObject({
+      payer_member_id: payer.id,
+      amount: 400,
+      status: PurchaseStatus.ACTIVE,
+    });
+    expect(createdPayload?.allocations).toEqual([
+      {
+        beneficiary_member_id: john.id,
+        responsible_member_id: john.id,
+        amount: 300,
+        allocation_kind: AllocationKind.EXPLICIT,
+      },
+    ]);
+    expect(replies).toEqual([
+      "Purchase #3 created: <code>$4.00</code> paid by <b>Member 1</b>.\n\nBeneficiaries:\n   - Member 2\t\t\t\t\t<code>$3.00</code>",
+    ]);
+    expect(replyOptions).toEqual([{ parse_mode: "HTML" }]);
+  });
+
+  test("rejects explicit allocations that exceed the purchase total", async () => {
+    const payer = createMember(1, { tg_user_id: "1001", alias: "payer" });
+    const john = createMember(2, { alias: "john" });
+    let createWasCalled = false;
+    const replies: string[] = [];
+
+    const buyHandler = setupBuyCommand({
+      findTelegramMember: () => Effect.succeed(payer),
+      findActiveByGroupId: () => Effect.succeed([payer, john]),
+      createPurchaseWithAllocations: (payload) => {
+        createWasCalled = true;
+        return Effect.succeed({
+          purchase: {
+            id: 4,
+            ...payload.purchase,
+            voided_at: null,
+          },
+          allocations: [],
+        });
+      },
+    });
+
+    await buyHandler?.(createBuyContext("/buy 4 @john=5", 1001, replies));
+
+    expect(createWasCalled).toBe(false);
+    expect(replies).toEqual([
+      "Explicit allocations cannot exceed the purchase total.",
+    ]);
+  });
 });

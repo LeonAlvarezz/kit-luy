@@ -38,7 +38,7 @@ const en = {
     beneficiaryNotFound:
       "Could not find @{username:string} in this settlement group.",
     allocationTotalMismatch:
-      "Explicit allocations must add up to the purchase total.",
+      "Explicit allocations cannot exceed the purchase total.",
     fallback: "Could not record this purchase.",
     created:
       "Purchase #{purchaseId:number} created: <code>${amount:string}</code> paid by <b>{payer:string}</b>.",
