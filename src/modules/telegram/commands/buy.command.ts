@@ -157,6 +157,94 @@ export const registerBuyCommand = (
       }
 
       const totalAmount = toCents(command.totalAmount);
+      const hasEqualAllocations = command.allocations.some(
+        (allocation) => allocation.value.type === "equal",
+      );
+
+      if (hasEqualAllocations) {
+        const hasExplicitAllocations = command.allocations.some(
+          (allocation) => allocation.value.type !== "equal",
+        );
+
+        if (hasExplicitAllocations) {
+          return yield* Effect.fail(
+            new IncorrectTelegramCommand({
+              command: "/buy",
+              message: t.buy.allocationUsage(),
+            }),
+          );
+        }
+
+        const selectedMembers = [];
+        for (const allocation of command.allocations) {
+          const member = membersByAlias.get(allocation.username.toLowerCase());
+          if (!member) {
+            return yield* Effect.fail(
+              new PurchaseBeneficiaryNotFound({
+                username: allocation.username,
+                message: t.buy.beneficiaryNotFound({
+                  username: allocation.username,
+                }),
+              }),
+            );
+          }
+
+          selectedMembers.push(member);
+        }
+
+        const participantMembers = selectedMembers.some(
+          (member) => member.id === sender.id,
+        )
+          ? selectedMembers
+          : [sender, ...selectedMembers];
+        const memberAllocations = splitEqually(
+          totalAmount,
+          participantMembers.length,
+        );
+        const allocationsByMember = participantMembers.map((member, index) => ({
+          member,
+          allocation: memberAllocations[index],
+        }));
+        const beneficiaryAllocations = allocationsByMember.filter(
+          ({ member }) => member.id !== sender.id,
+        );
+
+        const createdPurchase =
+          yield* dependencies.createPurchaseWithAllocations({
+            purchase: {
+              group_id: sender.group_id,
+              payer_member_id: sender.id,
+              tg_message_id: ctx.message.message_id,
+              amount: totalAmount,
+              note: null,
+              status: PurchaseStatus.ACTIVE,
+              created_at: Date.now(),
+            },
+            allocations: beneficiaryAllocations.map(
+              ({ member, allocation }) => ({
+                beneficiary_member_id: member.id,
+                responsible_member_id: member.id,
+                amount: allocation.amount,
+                allocation_kind: allocation.allocation_kind,
+              }),
+            ),
+          });
+
+        const replyMessage = formatBuyAllReply({
+          t,
+          purchaseId: createdPurchase.purchase.id,
+          totalAmount,
+          payer: sender,
+          beneficiaryAllocations,
+        });
+
+        return yield* Effect.promise(() =>
+          ctx.reply(replyMessage, {
+            parse_mode: "HTML",
+          }),
+        );
+      }
+
       const resolvedAllocations = command.allocations.map((allocation) => ({
         ...allocation,
         amount: resolveBuyAllocationAmount(allocation, totalAmount),
@@ -264,11 +352,15 @@ const resolveBuyAllocationAmount = (
   allocation: BuyAllocation,
   totalAmount: number,
 ) => {
-  if (allocation.value.type === "amount") {
-    return toCents(allocation.value.amount);
+  switch (allocation.value.type) {
+    case "amount":
+      return toCents(allocation.value.amount);
+    case "fraction":
+      return Math.round(
+        (totalAmount * allocation.value.numerator) /
+          allocation.value.denominator,
+      );
+    case "equal":
+      throw new Error("Equal allocations must be resolved before this point.");
   }
-
-  return Math.round(
-    (totalAmount * allocation.value.numerator) / allocation.value.denominator,
-  );
 };

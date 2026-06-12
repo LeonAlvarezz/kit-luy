@@ -216,6 +216,100 @@ describe("registerBuyCommand", () => {
     expect(replyOptions).toEqual([{ parse_mode: "HTML" }]);
   });
 
+  test("splits bare user allocations with the sender", async () => {
+    const payer = createMember(1, { tg_user_id: "1001", alias: "payer" });
+    const john = createMember(2, { alias: "john" });
+    let createdPayload: PurchaseModel.CreateWithAllocations | undefined;
+    const replies: string[] = [];
+    const replyOptions: unknown[] = [];
+
+    const buyHandler = setupBuyCommand({
+      findTelegramMember: () => Effect.succeed(payer),
+      findActiveByGroupId: () => Effect.succeed([payer, john]),
+      createPurchaseWithAllocations: (payload) => {
+        createdPayload = payload;
+        return Effect.succeed({
+          purchase: {
+            id: 6,
+            ...payload.purchase,
+            voided_at: null,
+          },
+          allocations: payload.allocations.map((allocation, index) => ({
+            id: index + 1,
+            purchase_id: 6,
+            ...allocation,
+          })),
+        });
+      },
+    });
+
+    await buyHandler?.(
+      createBuyContext("/buy 4 @john", 1001, replies, replyOptions),
+    );
+
+    expect(createdPayload?.purchase).toMatchObject({
+      payer_member_id: payer.id,
+      amount: 400,
+      status: PurchaseStatus.ACTIVE,
+    });
+    expect(createdPayload?.allocations).toEqual([
+      {
+        beneficiary_member_id: john.id,
+        responsible_member_id: john.id,
+        amount: 200,
+        allocation_kind: AllocationKind.EQUAL,
+      },
+    ]);
+    expect(replies).toEqual([
+      "Purchase #6 created: <code>$4.00</code> paid by <b>Member 1</b>.\n\nBeneficiaries:\n   - Member 2\t\t\t\t\t<code>$2.00</code>",
+    ]);
+    expect(replyOptions).toEqual([{ parse_mode: "HTML" }]);
+  });
+
+  test("splits multiple bare user allocations with the sender", async () => {
+    const payer = createMember(1, { tg_user_id: "1001", alias: "payer" });
+    const john = createMember(2, { alias: "john" });
+    const dara = createMember(3, { alias: "dara" });
+    let createdPayload: PurchaseModel.CreateWithAllocations | undefined;
+
+    const buyHandler = setupBuyCommand({
+      findTelegramMember: () => Effect.succeed(payer),
+      findActiveByGroupId: () => Effect.succeed([payer, john, dara]),
+      createPurchaseWithAllocations: (payload) => {
+        createdPayload = payload;
+        return Effect.succeed({
+          purchase: {
+            id: 7,
+            ...payload.purchase,
+            voided_at: null,
+          },
+          allocations: payload.allocations.map((allocation, index) => ({
+            id: index + 1,
+            purchase_id: 7,
+            ...allocation,
+          })),
+        });
+      },
+    });
+
+    await buyHandler?.(createBuyContext("/buy 6 @john @dara", 1001));
+
+    expect(createdPayload?.allocations).toEqual([
+      {
+        beneficiary_member_id: john.id,
+        responsible_member_id: john.id,
+        amount: 200,
+        allocation_kind: AllocationKind.EQUAL,
+      },
+      {
+        beneficiary_member_id: dara.id,
+        responsible_member_id: dara.id,
+        amount: 200,
+        allocation_kind: AllocationKind.EQUAL,
+      },
+    ]);
+  });
+
   test("allocates the explicit remainder to the sender", async () => {
     const payer = createMember(1, { tg_user_id: "1001", alias: "payer" });
     const john = createMember(2, { alias: "john" });

@@ -3,6 +3,30 @@ import { describe, expect, test } from "bun:test";
 import { parseBuyCommand } from "./buy.parser";
 
 describe("parseBuyCommand", () => {
+  test("parses bare user allocations", () => {
+    expect(parseBuyCommand("/buy 6 @userA @userB")).toEqual({
+      ok: true,
+      command: {
+        type: "users",
+        totalAmount: 6,
+        allocations: [
+          {
+            username: "userA",
+            value: {
+              type: "equal",
+            },
+          },
+          {
+            username: "userB",
+            value: {
+              type: "equal",
+            },
+          },
+        ],
+      },
+    });
+  });
+
   test("parses fractional allocations", () => {
     expect(parseBuyCommand("/buy 5 @dara=1/4")).toEqual({
       ok: true,

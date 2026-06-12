@@ -2,6 +2,9 @@ import { regex } from "./regex";
 
 export type BuyAllocationValue =
   | {
+      readonly type: "equal";
+    }
+  | {
       readonly type: "amount";
       readonly amount: number;
     }
@@ -101,7 +104,9 @@ const parseAllocationValue = (
   rawValue: string | undefined,
 ): BuyAllocationValue | null => {
   if (!rawValue) {
-    return null;
+    return {
+      type: "equal",
+    };
   }
 
   if (rawValue.includes("/")) {
