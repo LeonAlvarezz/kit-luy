@@ -41,6 +41,11 @@ export namespace MemberModel {
       tg_chat_id: string;
       title: string;
     };
+    telegram_user: {
+      tg_user_id: string;
+      username: string | null;
+      display_name: string | null;
+    };
     member: {
       tg_user_id: string;
       display_name: string | null;

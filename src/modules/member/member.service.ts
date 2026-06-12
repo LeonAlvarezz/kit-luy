@@ -8,6 +8,10 @@ import {
 import { TelegramGroupNotFound, TelegramMemberNotFound } from "./member.error";
 import { MEMBER_STATUS, MemberModel } from "./member.model";
 import { MemberRepository, MemberRepositoryLive } from "./member.repository";
+import {
+  TelegramUserService,
+  TelegramUserServiceLive,
+} from "@/modules/telegram-user/telegram-user.service";
 
 export class MemberService extends Context.Tag("MemberService")<
   MemberService,
@@ -46,6 +50,7 @@ export const MemberServiceLive = Layer.effect(
   Effect.gen(function* () {
     const repo = yield* MemberRepository;
     const groupRepo = yield* GroupRepository;
+    const telegramUserService = yield* TelegramUserService;
     return {
       findAllMembers: () =>
         Effect.gen(function* () {
@@ -94,6 +99,12 @@ export const MemberServiceLive = Layer.effect(
         }),
       registerTelegramMember: (payload) =>
         Effect.gen(function* () {
+          yield* telegramUserService.upsertByTelegramUser({
+            tg_user_id: payload.telegram_user.tg_user_id,
+            username: payload.telegram_user.username,
+            display_name: payload.telegram_user.display_name,
+          });
+
           const group = yield* groupRepo.upsertByTelegramChatId({
             tg_chat_id: payload.group.tg_chat_id,
             title: payload.group.title,
@@ -146,4 +157,8 @@ export const MemberServiceLive = Layer.effect(
         }),
     };
   }),
-).pipe(Layer.provide(MemberRepositoryLive), Layer.provide(GroupRepositoryLive));
+).pipe(
+  Layer.provide(MemberRepositoryLive),
+  Layer.provide(GroupRepositoryLive),
+  Layer.provide(TelegramUserServiceLive),
+);

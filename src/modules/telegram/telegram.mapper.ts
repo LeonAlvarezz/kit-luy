@@ -1,4 +1,5 @@
 import type { MemberModel } from "@/modules/member/member.model";
+import type { TelegramUserModel } from "@/modules/telegram-user/telegram-user.model";
 
 export type TelegramUser = {
   id: number;
@@ -35,7 +36,9 @@ export const toRegisterTelegramMember = (
   chat: TelegramChat,
   user: TelegramUser,
 ): MemberModel.RegisterTelegramMember | null => {
-  if (user.is_bot || !Number.isFinite(chat.id) || !Number.isFinite(user.id)) {
+  const telegramUser = toUpsertTelegramUser(user);
+
+  if (!telegramUser || !Number.isFinite(chat.id)) {
     return null;
   }
 
@@ -44,11 +47,26 @@ export const toRegisterTelegramMember = (
       tg_chat_id: String(chat.id),
       title: getChatTitle(chat),
     },
+    telegram_user: telegramUser,
     member: {
       tg_user_id: String(user.id),
       display_name: getUserDisplayName(user),
       alias: user.username ?? null,
     },
+  };
+};
+
+export const toUpsertTelegramUser = (
+  user: TelegramUser,
+): TelegramUserModel.UpsertTelegramUser | null => {
+  if (user.is_bot || !Number.isFinite(user.id)) {
+    return null;
+  }
+
+  return {
+    tg_user_id: String(user.id),
+    username: user.username ?? null,
+    display_name: getUserDisplayName(user),
   };
 };
 

@@ -17,6 +17,11 @@ import {
   type VoidCommandDependencies,
 } from "./void.command";
 import { LangCommandDependencies, registerLangCommand } from "./lang.command";
+import {
+  registerSetQrCommand,
+  type SetQrCommandDependencies,
+} from "./setqr.command";
+import { registerQrCommand, type QrCommandDependencies } from "./qr.command";
 import { getDefaultLocale } from "../lang/group-locale";
 
 export const registerTelegramCommands = (
@@ -29,6 +34,8 @@ export const registerTelegramCommands = (
   listCommandDependencies: ListCommandDependencies,
   voidCommandDependencies: VoidCommandDependencies,
   langCommandDependencies: LangCommandDependencies,
+  setQrDependencies: SetQrCommandDependencies,
+  qrDependencies: QrCommandDependencies,
 ) => {
   bot.start((ctx) => {
     return ctx.reply(getDefaultLocale().bot.welcome());
@@ -43,4 +50,6 @@ export const registerTelegramCommands = (
   registerListCommand(bot, listCommandDependencies);
   registerVoidCommand(bot, voidCommandDependencies);
   registerLangCommand(bot, langCommandDependencies);
+  registerSetQrCommand(bot, setQrDependencies);
+  registerQrCommand(bot, qrDependencies);
 };

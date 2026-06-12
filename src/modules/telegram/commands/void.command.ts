@@ -51,7 +51,10 @@ export const registerVoidCommand = (
         tg_chat_id: String(ctx.chat.id),
         tg_user_id: String(ctx.from.id),
       });
-      const t = yield* getGroupLocale(dependencies.findGroupById, sender.group_id);
+      const t = yield* getGroupLocale(
+        dependencies.findGroupById,
+        sender.group_id,
+      );
       const purchase = yield* dependencies.findPurchaseById(purchaseId);
 
       if (purchase.group_id !== sender.group_id) {

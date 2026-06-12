@@ -46,6 +46,9 @@ type RootTranslation = {
 	​/​s​e​t​t​l​e​ ​-​ ​S​h​o​w​ ​w​h​o​ ​s​h​o​u​l​d​ ​p​a​y​ ​w​h​o​m​.​
 	​/​l​i​s​t​ ​-​ ​S​h​o​w​ ​r​e​c​e​n​t​ ​a​c​t​i​v​e​ ​p​u​r​c​h​a​s​e​s​.​
 	​/​v​o​i​d​ ​<​p​u​r​c​h​a​s​e​-​i​d​>​ ​-​ ​V​o​i​d​ ​a​ ​p​u​r​c​h​a​s​e​.​
+	​/​s​e​t​q​r​ ​-​ ​S​e​t​ ​y​o​u​r​ ​p​a​y​m​e​n​t​ ​Q​R​ ​c​o​d​e​ ​(​D​M​ ​o​n​l​y​)​.​
+	​/​q​r​ ​-​ ​S​h​o​w​ ​y​o​u​r​ ​p​a​y​m​e​n​t​ ​Q​R​ ​c​o​d​e​.​
+	​/​q​r​ ​@​u​s​e​r​ ​-​ ​S​h​o​w​ ​a​ ​m​e​m​b​e​r​'​s​ ​p​a​y​m​e​n​t​ ​Q​R​ ​c​o​d​e​.​
 	​/​h​e​l​p​ ​-​ ​S​h​o​w​ ​t​h​i​s​ ​c​o​m​m​a​n​d​ ​l​i​s​t​.
 		 */
 		message: string
@@ -300,6 +303,52 @@ type RootTranslation = {
 		 */
 		fallback: string
 	}
+	setqr: {
+		/**
+		 * P​l​e​a​s​e​ ​s​e​n​d​ ​o​r​ ​f​o​r​w​a​r​d​ ​y​o​u​r​ ​Q​R​ ​c​o​d​e​ ​p​h​o​t​o​ ​d​i​r​e​c​t​l​y​ ​t​o​ ​t​h​i​s​ ​p​r​i​v​a​t​e​ ​c​h​a​t​ ​t​o​ ​s​e​t​ ​i​t​.
+		 */
+		usagePrivate: string
+		/**
+		 * P​l​e​a​s​e​ ​u​s​e​ ​/​s​e​t​q​r​ ​i​n​ ​a​ ​p​r​i​v​a​t​e​ ​c​h​a​t​ ​w​i​t​h​ ​t​h​e​ ​b​o​t​.
+		 */
+		useInPrivate: string
+		/**
+		 * Y​o​u​r​ ​p​a​y​m​e​n​t​ ​Q​R​ ​c​o​d​e​ ​h​a​s​ ​b​e​e​n​ ​s​a​v​e​d​ ​s​u​c​c​e​s​s​f​u​l​l​y​!​ ​Y​o​u​ ​c​a​n​ ​n​o​w​ ​u​s​e​ ​i​t​ ​i​n​ ​s​e​t​t​l​e​m​e​n​t​ ​g​r​o​u​p​s​.
+		 */
+		success: string
+		/**
+		 * C​o​u​l​d​ ​n​o​t​ ​s​a​v​e​ ​y​o​u​r​ ​Q​R​ ​c​o​d​e​.
+		 */
+		fallback: string
+	}
+	qr: {
+		/**
+		 * U​s​e​ ​/​q​r​ ​t​o​ ​s​h​o​w​ ​y​o​u​r​ ​Q​R​,​ ​o​r​ ​/​q​r​ ​@​u​s​e​r​ ​t​o​ ​s​h​o​w​ ​a​ ​m​e​m​b​e​r​'​s​ ​Q​R​.
+		 */
+		usage: string
+		/**
+		 * Y​o​u​ ​h​a​v​e​n​'​t​ ​s​e​t​ ​y​o​u​r​ ​p​a​y​m​e​n​t​ ​Q​R​ ​y​e​t​.​ ​P​l​e​a​s​e​ ​D​M​ ​m​e​ ​a​n​d​ ​s​e​n​d​ ​y​o​u​r​ ​Q​R​ ​p​h​o​t​o​ ​t​o​ ​s​e​t​ ​i​t​.
+		 */
+		notSetSelf: string
+		/**
+		 * <​b​>​{​n​a​m​e​}​<​/​b​>​ ​h​a​s​n​'​t​ ​s​e​t​ ​t​h​e​i​r​ ​p​a​y​m​e​n​t​ ​Q​R​ ​y​e​t​.​ ​A​s​k​ ​t​h​e​m​ ​t​o​ ​D​M​ ​m​e​ ​a​n​d​ ​s​e​n​d​ ​t​h​e​i​r​ ​Q​R​ ​p​h​o​t​o​.
+		 * @param {string} name
+		 */
+		notSetOther: RequiredParams<'name'>
+		/**
+		 * Y​o​u​r​ ​p​a​y​m​e​n​t​ ​Q​R​ ​c​o​d​e​.
+		 */
+		captionSelf: string
+		/**
+		 * P​a​y​m​e​n​t​ ​Q​R​ ​c​o​d​e​ ​f​o​r​ ​<​b​>​{​n​a​m​e​}​<​/​b​>​.
+		 * @param {string} name
+		 */
+		captionOther: RequiredParams<'name'>
+		/**
+		 * C​o​u​l​d​ ​n​o​t​ ​r​e​t​r​i​e​v​e​ ​Q​R​ ​c​o​d​e​.
+		 */
+		fallback: string
+	}
 }
 
 export type TranslationFunctions = {
@@ -334,6 +383,9 @@ export type TranslationFunctions = {
 	/settle - Show who should pay whom.
 	/list - Show recent active purchases.
 	/void <purchase-id> - Void a purchase.
+	/setqr - Set your payment QR code (DM only).
+	/qr - Show your payment QR code.
+	/qr @user - Show a member's payment QR code.
 	/help - Show this command list.
 		 */
 		message: () => LocalizedString
@@ -557,6 +609,50 @@ export type TranslationFunctions = {
 		status: (arg: { claimId: number, status: string }) => LocalizedString
 		/**
 		 * Could not process repayment claim action.
+		 */
+		fallback: () => LocalizedString
+	}
+	setqr: {
+		/**
+		 * Please send or forward your QR code photo directly to this private chat to set it.
+		 */
+		usagePrivate: () => LocalizedString
+		/**
+		 * Please use /setqr in a private chat with the bot.
+		 */
+		useInPrivate: () => LocalizedString
+		/**
+		 * Your payment QR code has been saved successfully! You can now use it in settlement groups.
+		 */
+		success: () => LocalizedString
+		/**
+		 * Could not save your QR code.
+		 */
+		fallback: () => LocalizedString
+	}
+	qr: {
+		/**
+		 * Use /qr to show your QR, or /qr @user to show a member's QR.
+		 */
+		usage: () => LocalizedString
+		/**
+		 * You haven't set your payment QR yet. Please DM me and send your QR photo to set it.
+		 */
+		notSetSelf: () => LocalizedString
+		/**
+		 * <b>{name}</b> hasn't set their payment QR yet. Ask them to DM me and send their QR photo.
+		 */
+		notSetOther: (arg: { name: string }) => LocalizedString
+		/**
+		 * Your payment QR code.
+		 */
+		captionSelf: () => LocalizedString
+		/**
+		 * Payment QR code for <b>{name}</b>.
+		 */
+		captionOther: (arg: { name: string }) => LocalizedString
+		/**
+		 * Could not retrieve QR code.
 		 */
 		fallback: () => LocalizedString
 	}

@@ -29,6 +29,13 @@
       "when": 1780478406889,
       "tag": "0003_add_group_lang",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1781261384256,
+      "tag": "0004_good_hercules",
+      "breakpoints": true
     }
   ]
 }

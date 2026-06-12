@@ -10,7 +10,7 @@ const en = {
   },
   help: {
     message:
-      "Kit Luy commands:\n\n/start - Show the welcome message.\n/join - Register yourself in this settlement group.\n/buy <amount> - Record a purchase split across everyone.\n/buy <amount> @user=amount|fraction ... - Record a purchase with explicit splits.\n/paid <amount> - Claim that you paid your next repayment.\n/paid @user=<amount> - Claim that you paid a specific member.\n/settle - Show who should pay whom.\n/list - Show recent active purchases.\n/void <purchase-id> - Void a purchase.\n/help - Show this command list.",
+      "Kit Luy commands:\n\n/start - Show the welcome message.\n/join - Register yourself in this settlement group.\n/buy <amount> - Record a purchase split across everyone.\n/buy <amount> @user=amount|fraction ... - Record a purchase with explicit splits.\n/paid <amount> - Claim that you paid your next repayment.\n/paid @user=<amount> - Claim that you paid a specific member.\n/settle - Show who should pay whom.\n/list - Show recent active purchases.\n/void <purchase-id> - Void a purchase.\n/setqr - Set your payment QR code (DM only).\n/qr - Show your payment QR code.\n/qr @user - Show a member's payment QR code.\n/help - Show this command list.",
   },
   lang: {
     current: "Current language: {language:string}.",
@@ -91,6 +91,20 @@ const en = {
     rejected: "Repayment claim rejected.",
     status: "Repayment claim #{claimId:number} {status:string}.",
     fallback: "Could not process repayment claim action.",
+  },
+  setqr: {
+    usagePrivate: "Please send or forward your QR code photo directly to this private chat to set it.",
+    useInPrivate: "Please use /setqr in a private chat with the bot.",
+    success: "Your payment QR code has been saved successfully! You can now use it in settlement groups.",
+    fallback: "Could not save your QR code.",
+  },
+  qr: {
+    usage: "Use /qr to show your QR, or /qr @user to show a member's QR.",
+    notSetSelf: "You haven't set your payment QR yet. Please DM me and send your QR photo to set it.",
+    notSetOther: "<b>{name:string}</b> hasn't set their payment QR yet. Ask them to DM me and send their QR photo.",
+    captionSelf: "Your payment QR code.",
+    captionOther: "Payment QR code for <b>{name:string}</b>.",
+    fallback: "Could not retrieve QR code.",
   },
 } satisfies BaseTranslation;
 

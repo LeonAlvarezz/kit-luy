@@ -54,7 +54,10 @@ export const registerListCommand = (
         tg_chat_id: tgChatId,
         tg_user_id: tgUserId,
       });
-      const t = yield* getGroupLocale(dependencies.findGroupById, sender.group_id);
+      const t = yield* getGroupLocale(
+        dependencies.findGroupById,
+        sender.group_id,
+      );
 
       const purchases = yield* dependencies.findAllPurchaseByGroupId(
         sender.group_id,

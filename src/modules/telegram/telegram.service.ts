@@ -15,6 +15,7 @@ import { registerTelegramCommands } from "./commands";
 import { registerTelegramEvents } from "./events";
 import {
   toRegisterTelegramMember,
+  toUpsertTelegramUser,
   type TelegramChat,
   type TelegramUser,
 } from "./telegram.mapper";
@@ -35,6 +36,10 @@ import {
   RepaymentService,
   RepaymentServiceLive,
 } from "../repayment/repayment.service";
+import {
+  TelegramUserService,
+  TelegramUserServiceLive,
+} from "../telegram-user/telegram-user.service";
 
 export class TelegramService extends Context.Tag("TelegramService")<
   TelegramService,
@@ -58,6 +63,7 @@ export const TelegramServiceLive = Layer.effect(
     const purchaseService = yield* PurchaseService;
     const repaymentClaimService = yield* RepaymentClaimService;
     const repaymentService = yield* RepaymentService;
+    const telegramUserService = yield* TelegramUserService;
     const token = env.TELEGRAM_BOT_TOKEN;
 
     if (!token) {
@@ -83,6 +89,16 @@ export const TelegramServiceLive = Layer.effect(
         return yield* memberService.registerTelegramMember(payload);
       });
 
+    const upsertTelegramUser = (user: TelegramUser) =>
+      Effect.gen(function* () {
+        const payload = toUpsertTelegramUser(user);
+        if (!payload) {
+          return;
+        }
+
+        return yield* telegramUserService.upsertByTelegramUser(payload);
+      });
+
     bot.catch((error, ctx) => {
       throw new TelegramUpdateHandlingFailed({
         message: `Telegram update ${ctx.update.update_id} failed: ${String(error)}`,
@@ -90,18 +106,19 @@ export const TelegramServiceLive = Layer.effect(
     });
 
     bot.use(async (ctx, next) => {
-      if (
-        !ctx.chat ||
-        !ctx.from ||
-        !isSettlementGroupChat(ctx.chat) ||
-        isChatMigrationMessage(ctx.message)
-      ) {
+      if (!ctx.from || isChatMigrationMessage(ctx.message)) {
         return next();
       }
 
-      return Effect.runPromise(registerTelegramMember(ctx.chat, ctx.from)).then(
-        () => next(),
-      );
+      if (ctx.chat && isSettlementGroupChat(ctx.chat)) {
+        return Effect.runPromise(
+          registerTelegramMember(ctx.chat, ctx.from).pipe(Effect.asVoid),
+        ).then(() => next());
+      }
+
+      return Effect.runPromise(
+        upsertTelegramUser(ctx.from).pipe(Effect.asVoid),
+      ).then(() => next());
     });
 
     registerTelegramCommands(
@@ -152,6 +169,16 @@ export const TelegramServiceLive = Layer.effect(
         findByGroupId: groupService.findById,
         updateGroupLang: groupService.updateLang,
       },
+      {
+        updatePaymentQr: telegramUserService.updatePaymentQr,
+      },
+      {
+        findTelegramMember: memberService.findTelegramMember,
+        findActiveByGroupId: memberService.findActiveByGroupId,
+        findGroupById: groupService.findById,
+        findByTgUserId: telegramUserService.findByTgUserId,
+        findByUsername: telegramUserService.findByUsername,
+      },
     );
 
     registerTelegramEvents(bot, {
@@ -199,4 +226,5 @@ export const TelegramServiceLive = Layer.effect(
   Layer.provide(PurchaseServiceLive),
   Layer.provide(RepaymentClaimServiceLive),
   Layer.provide(RepaymentServiceLive),
+  Layer.provide(TelegramUserServiceLive),
 );

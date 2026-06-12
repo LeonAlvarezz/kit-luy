@@ -15,6 +15,9 @@ describe("TELEGRAM_COMMAND_HELP_MESSAGE", () => {
     expect(TELEGRAM_COMMAND_HELP_MESSAGE).toContain("/settle");
     expect(TELEGRAM_COMMAND_HELP_MESSAGE).toContain("/list");
     expect(TELEGRAM_COMMAND_HELP_MESSAGE).toContain("/void <purchase-id>");
+    expect(TELEGRAM_COMMAND_HELP_MESSAGE).toContain("/setqr");
+    expect(TELEGRAM_COMMAND_HELP_MESSAGE).toContain("/qr");
+    expect(TELEGRAM_COMMAND_HELP_MESSAGE).toContain("/qr @user");
     expect(TELEGRAM_COMMAND_HELP_MESSAGE).toContain("/help");
   });
 
