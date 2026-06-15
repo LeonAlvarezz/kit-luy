@@ -106,7 +106,7 @@ export const TelegramServiceLive = Layer.effect(
     });
 
     bot.use(async (ctx, next) => {
-      if (!ctx.from || isChatMigrationMessage(ctx.message)) {
+      if (!ctx.from || ctx.from.is_bot || isChatMigrationMessage(ctx.message)) {
         return next();
       }
 

@@ -81,6 +81,10 @@ export const registerTelegramEvents = (
   });
 
   bot.on(message("left_chat_member"), (ctx) => {
+    if (ctx.message.left_chat_member.is_bot) {
+      return;
+    }
+
     const toDeactivatePayloadEffect = (
       chat: TelegramChat,
       user: TelegramUser,
@@ -89,7 +93,7 @@ export const registerTelegramEvents = (
         Effect.mapError(
           () =>
             new InvalidTelegramMemberPayload({
-              operation: "register",
+              operation: "deactivate",
               tg_chat_id: String(chat.id),
               tg_user_id: String(user.id),
             }),
