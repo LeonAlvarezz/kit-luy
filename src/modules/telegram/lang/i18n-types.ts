@@ -299,6 +299,16 @@ type RootTranslation = {
 		 */
 		status: RequiredParams<'claimId' | 'status'>
 		/**
+		 * R​e​p​a​y​m​e​n​t​ ​s​u​c​c​e​e​d​e​d​ ​✅​ ​#​{​c​l​a​i​m​I​d​}
+		 * @param {number} claimId
+		 */
+		success: RequiredParams<'claimId'>
+		/**
+		 * R​e​p​a​y​m​e​n​t​ ​r​e​j​e​c​t​e​d​ ​�​�​ ​#​{​c​l​a​i​m​I​d​}
+		 * @param {number} claimId
+		 */
+		failed: RequiredParams<'claimId'>
+		/**
 		 * C​o​u​l​d​ ​n​o​t​ ​p​r​o​c​e​s​s​ ​r​e​p​a​y​m​e​n​t​ ​c​l​a​i​m​ ​a​c​t​i​o​n​.
 		 */
 		fallback: string
@@ -607,6 +617,14 @@ export type TranslationFunctions = {
 		 * Repayment claim #{claimId} {status}.
 		 */
 		status: (arg: { claimId: number, status: string }) => LocalizedString
+		/**
+		 * Repayment succeeded ✅ #{claimId}
+		 */
+		success: (arg: { claimId: number }) => LocalizedString
+		/**
+		 * Repayment rejected 🚫 #{claimId}
+		 */
+		failed: (arg: { claimId: number }) => LocalizedString
 		/**
 		 * Could not process repayment claim action.
 		 */

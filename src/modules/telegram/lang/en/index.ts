@@ -34,7 +34,8 @@ const en = {
       "Use allocations like @userA=2 @userB=1/4 after the amount.",
     noOtherActiveMembers:
       "There are no other active members in this settlement group.",
-    duplicateBeneficiary: "@{username:string} appears more than once in this purchase.",
+    duplicateBeneficiary:
+      "@{username:string} appears more than once in this purchase.",
     beneficiaryNotFound:
       "Could not find @{username:string} in this settlement group.",
     allocationTotalMismatch:
@@ -43,7 +44,8 @@ const en = {
     created:
       "Purchase #{purchaseId:number} created: <code>${amount:string}</code> paid by <b>{payer:string}</b>.",
     beneficiaries: "Beneficiaries:",
-    beneficiaryLine: "   - {member:string}\t\t\t\t\t<code>${amount:string}</code>",
+    beneficiaryLine:
+      "   - {member:string}\t\t\t\t\t<code>${amount:string}</code>",
   },
   paid: {
     usage: "Use /paid 2 or /paid @userA=10",
@@ -62,7 +64,8 @@ const en = {
     allClear: "All clear. No repayments are needed.",
     header: "Repayments to settle:",
     creditor: "Creditor",
-    repaymentLine: "   - {member:string}\t\t\t\t\t<code>${amount:string}</code>",
+    repaymentLine:
+      "   - {member:string}\t\t\t\t\t<code>${amount:string}</code>",
     fallback: "Could not calculate settlement.",
   },
   list: {
@@ -75,8 +78,7 @@ const en = {
   },
   void: {
     usage: "Use /void <purchase-id>.",
-    wrongGroup:
-      "Purchase #{purchaseId:number} does not belong to this group.",
+    wrongGroup: "Purchase #{purchaseId:number} does not belong to this group.",
     onlyCreator:
       "Only the member who created purchase #{purchaseId:number} can void it.",
     alreadyVoided: "Purchase #{purchaseId:number} is already voided.",
@@ -90,18 +92,24 @@ const en = {
     accepted: "Repayment claim accepted.",
     rejected: "Repayment claim rejected.",
     status: "Repayment claim #{claimId:number} {status:string}.",
+    success: "#{claimId:number} Repayment succeeded ✅",
+    failed: "#{claimId:number} Repayment rejected 🚫",
     fallback: "Could not process repayment claim action.",
   },
   setqr: {
-    usagePrivate: "Please send or forward your QR code photo directly to this private chat to set it.",
+    usagePrivate:
+      "Please send or forward your QR code photo directly to this private chat to set it.",
     useInPrivate: "Please use /setqr in a private chat with the bot.",
-    success: "Your payment QR code has been saved successfully! You can now use it in settlement groups.",
+    success:
+      "Your payment QR code has been saved successfully! You can now use it in settlement groups.",
     fallback: "Could not save your QR code.",
   },
   qr: {
     usage: "Use /qr to show your QR, or /qr @user to show a member's QR.",
-    notSetSelf: "You haven't set your payment QR yet. Please DM me and send your QR photo to set it.",
-    notSetOther: "<b>{name:string}</b> hasn't set their payment QR yet. Ask them to DM me and send their QR photo.",
+    notSetSelf:
+      "You haven't set your payment QR yet. Please DM me and send your QR photo to set it.",
+    notSetOther:
+      "<b>{name:string}</b> hasn't set their payment QR yet. Ask them to DM me and send their QR photo.",
     captionSelf: "Your payment QR code.",
     captionOther: "Payment QR code for <b>{name:string}</b>.",
     fallback: "Could not retrieve QR code.",

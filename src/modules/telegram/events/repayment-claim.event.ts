@@ -9,6 +9,7 @@ import type { RepaymentService } from "@/modules/repayment/repayment.service";
 import { IncorrectTelegramCommand } from "../telegram.error";
 import { getDefaultLocale, getGroupLocale } from "../lang/group-locale";
 import { isSettlementGroupChat } from "../telegram.utils";
+import { RepaymentClaimStatus } from "@/modules/repayment/repayment-claim.model";
 
 type RepaymentClaimAction = "accept" | "reject";
 
@@ -51,7 +52,10 @@ export const registerRepaymentClaimEvents = (
         }),
         dependencies.findById(claimId),
       ]);
-      const t = yield* getGroupLocale(dependencies.findGroupById, member.group_id);
+      const t = yield* getGroupLocale(
+        dependencies.findGroupById,
+        member.group_id,
+      );
 
       if (member.id !== claim.receiver_member_id) {
         return yield* Effect.fail(
@@ -82,10 +86,13 @@ export const registerRepaymentClaimEvents = (
       return yield* Effect.promise(async () => {
         await ctx.answerCbQuery(statusText);
         await ctx.editMessageText(
-          t.repaymentClaim.status({
-            claimId: updatedClaim.id,
-            status: updatedClaim.status,
-          }),
+          updatedClaim.status === RepaymentClaimStatus.CONFIRMED
+            ? t.repaymentClaim.success({
+                claimId: updatedClaim.id,
+              })
+            : t.repaymentClaim.failed({
+                claimId: updatedClaim.id,
+              }),
         );
       });
     });
