@@ -1,7 +1,6 @@
 import { DbError } from "@/core/error";
 import { Context, Effect, Layer } from "effect";
 import { PurchaseModel } from "./purchase.model";
-import type { RepaymentModel } from "../repayment/repayment.model";
 import {
   PurchaseAllocationsRequired,
   PurchaseNotFound,
@@ -63,7 +62,39 @@ export const PurchaseServiceLive = Layer.effect(
             repo.findActivePurchaseByGroupId(group_id),
             repaymentRepo.findActiveByGroupId(group_id),
           ]);
-          return calculateSettlementBalances({ purchases, repayments });
+          const balancesByMember = new Map<number, number>();
+
+          for (const purchase of purchases) {
+            for (const allocation of purchase.allocations) {
+              balancesByMember.set(
+                purchase.payer_member_id,
+                (balancesByMember.get(purchase.payer_member_id) ?? 0) +
+                  allocation.amount,
+              );
+              balancesByMember.set(
+                allocation.responsible_member_id,
+                (balancesByMember.get(allocation.responsible_member_id) ?? 0) -
+                  allocation.amount,
+              );
+            }
+          }
+
+          for (const repayment of repayments) {
+            balancesByMember.set(
+              repayment.sender_member_id,
+              (balancesByMember.get(repayment.sender_member_id) ?? 0) +
+                repayment.amount_cents,
+            );
+            balancesByMember.set(
+              repayment.receiver_member_id,
+              (balancesByMember.get(repayment.receiver_member_id) ?? 0) -
+                repayment.amount_cents,
+            );
+          }
+
+          return [...balancesByMember.entries()]
+            .filter(([, balance]) => balance !== 0)
+            .map(([member_id, balance]) => ({ member_id, balance }));
         }),
       update: (id, payload) =>
         Effect.gen(function* () {
@@ -104,53 +135,3 @@ export const PurchaseServiceLive = Layer.effect(
   Layer.provide(PurchaseRepositoryLive),
   Layer.provide(RepaymentRepositoryLive),
 );
-
-export const calculateSettlementBalances = ({
-  purchases,
-  repayments,
-}: {
-  readonly purchases: readonly PurchaseModel.EntityWithAllocation[];
-  readonly repayments: readonly RepaymentModel.Entity[];
-}): PurchaseModel.SettlementBalance[] => {
-  const balancesByMember = new Map<number, number>();
-
-  for (const purchase of purchases) {
-    for (const allocation of purchase.allocations) {
-      balancesByMember.set(
-        purchase.payer_member_id,
-        (balancesByMember.get(purchase.payer_member_id) ?? 0) +
-          allocation.amount,
-      );
-      balancesByMember.set(
-        allocation.responsible_member_id,
-        (balancesByMember.get(allocation.responsible_member_id) ?? 0) -
-          allocation.amount,
-      );
-    }
-  }
-
-  for (const repayment of repayments) {
-    const senderBalance = balancesByMember.get(repayment.sender_member_id) ?? 0;
-    const receiverBalance =
-      balancesByMember.get(repayment.receiver_member_id) ?? 0;
-    const amount = Math.min(
-      repayment.amount_cents,
-      Math.max(0, -senderBalance),
-      Math.max(0, receiverBalance),
-    );
-
-    if (amount <= 0) {
-      continue;
-    }
-
-    balancesByMember.set(repayment.sender_member_id, senderBalance + amount);
-    balancesByMember.set(
-      repayment.receiver_member_id,
-      receiverBalance - amount,
-    );
-  }
-
-  return [...balancesByMember.entries()]
-    .filter(([, balance]) => balance !== 0)
-    .map(([member_id, balance]) => ({ member_id, balance }));
-};
