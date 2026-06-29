@@ -13,6 +13,7 @@ import {
 } from "@/modules/purchase/purchase.service";
 import { registerTelegramCommands } from "./commands";
 import { registerTelegramEvents } from "./events";
+import { TelegramDeps } from "./telegram.types";
 import {
   toRegisterTelegramMember,
   toUpsertTelegramUser,
@@ -44,6 +45,7 @@ import {
   TelegramUserService,
   TelegramUserServiceLive,
 } from "../telegram-user/telegram-user.service";
+import { Update } from "telegraf/types";
 
 export class TelegramService extends Context.Tag("TelegramService")<
   TelegramService,
@@ -62,12 +64,7 @@ export const TelegramServiceLive = Layer.effect(
   TelegramService,
   Effect.gen(function* () {
     const env = yield* WorkerEnv;
-    const groupService = yield* GroupService;
     const memberService = yield* MemberService;
-    const purchaseService = yield* PurchaseService;
-    const repaymentClaimService = yield* RepaymentClaimService;
-    const repaymentService = yield* RepaymentService;
-    const telegramConversationService = yield* TelegramConversationService;
     const telegramUserService = yield* TelegramUserService;
     const token = env.TELEGRAM_BOT_TOKEN;
 
@@ -111,7 +108,6 @@ export const TelegramServiceLive = Layer.effect(
     });
 
     bot.use(async (ctx, next) => {
-      console.log("[TelegramService] Global middleware received update:", JSON.stringify(ctx.update));
       if (!ctx.from || ctx.from.is_bot || isChatMigrationMessage(ctx.message)) {
         return next();
       }
@@ -127,95 +123,13 @@ export const TelegramServiceLive = Layer.effect(
       ).then(() => next());
     });
 
-    registerTelegramEvents(bot, {
-      updateTelegramChatId: groupService.updateTelegramChatId,
-      registerTelegramMember: memberService.registerTelegramMember,
-      deactivateTelegramMember: memberService.deactivateTelegramMember,
-      buyConversationEvents: {
-        findTelegramMember: memberService.findTelegramMember,
-        findActiveByGroupId: memberService.findActiveByGroupId,
-        findGroupById: groupService.findById,
-        createPurchaseWithAllocations: purchaseService.createWithAllocations,
-        findActiveSession: telegramConversationService.findActiveSession,
-        findSessionById: telegramConversationService.findSessionById,
-        updateSession: telegramConversationService.updateSession,
-        completeSession: telegramConversationService.completeSession,
-        cancelSession: telegramConversationService.cancelSession,
-        cancelActiveSession: telegramConversationService.cancelActiveSession,
-      },
-      repaymentClaimEvents: {
-        confirmClaim: repaymentClaimService.confirmClaim,
-        rejectClaim: repaymentClaimService.rejectClaim,
-        findById: repaymentClaimService.findById,
-        findGroupById: groupService.findById,
-        findTelegramMember: memberService.findTelegramMember,
-        createRepaymentFromConfirmedClaim:
-          repaymentService.createFromConfirmedClaim,
-      },
-    });
+    const runtime = yield* Effect.runtime<TelegramDeps>();
 
-    registerTelegramCommands(
-      bot,
-      {
-        registerTelegramMember: memberService.registerTelegramMember,
-      },
-      {
-        findTelegramMember: memberService.findTelegramMember,
-        findGroupById: groupService.findById,
-      },
-      {
-        findTelegramMember: memberService.findTelegramMember,
-        findActiveByGroupId: memberService.findActiveByGroupId,
-        findGroupById: groupService.findById,
-        createPurchaseWithAllocations: purchaseService.createWithAllocations,
-        startBuySession: telegramConversationService.startBuySession,
-      },
-      {
-        findTelegramMember: memberService.findTelegramMember,
-        findActiveByGroupId: memberService.findActiveByGroupId,
-        findGroupById: groupService.findById,
-        findSettlementBalancesByGroupId:
-          purchaseService.findSettlementBalancesByGroupId,
-      },
+    registerTelegramEvents(bot, runtime);
 
-      {
-        findTelegramMember: memberService.findTelegramMember,
-        findActiveByGroupId: memberService.findActiveByGroupId,
-        findGroupById: groupService.findById,
-        findSettlementBalancesByGroupId:
-          purchaseService.findSettlementBalancesByGroupId,
-        createRepaymentClaim: repaymentClaimService.create,
-      },
-      {
-        findTelegramMember: memberService.findTelegramMember,
-        findActiveByGroupId: memberService.findActiveByGroupId,
-        findGroupById: groupService.findById,
-        findAllPurchaseByGroupId: purchaseService.findAllByGroupId,
-      },
-      {
-        findTelegramMember: memberService.findTelegramMember,
-        findGroupById: groupService.findById,
-        findPurchaseById: purchaseService.findById,
-        updatePurchase: purchaseService.update,
-      },
-      {
-        findTelegramMember: memberService.findTelegramMember,
-        findByGroupId: groupService.findById,
-        updateGroupLang: groupService.updateLang,
-      },
-      {
-        updatePaymentQr: telegramUserService.updatePaymentQr,
-      },
-      {
-        findTelegramMember: memberService.findTelegramMember,
-        findActiveByGroupId: memberService.findActiveByGroupId,
-        findGroupById: groupService.findById,
-        findByTgUserId: telegramUserService.findByTgUserId,
-        findByUsername: telegramUserService.findByUsername,
-      },
-    );
+    registerTelegramCommands(bot, runtime);
 
-    const handleUpdate = (update: any) =>
+    const handleUpdate = (update: Update) =>
       Effect.tryPromise({
         try: () => bot.handleUpdate(update),
         catch: (error) =>

@@ -1,5 +1,5 @@
 import type { MemberModel } from "@/modules/member/member.model";
-import type { GroupService } from "@/modules/group/group.service";
+import { GroupService } from "@/modules/group/group.service";
 import { MemberService } from "@/modules/member/member.service";
 import {
   PurchaseStatus,
@@ -7,7 +7,7 @@ import {
 } from "@/modules/purchase/purchase.model";
 import { PurchaseService } from "@/modules/purchase/purchase.service";
 import { formatAmount } from "@/shared/currency";
-import { Context, Effect } from "effect";
+import { Context, Effect, Runtime } from "effect";
 import { Telegraf } from "telegraf";
 import { runTelegramCommand } from "./command-error";
 import { IncorrectTelegramCommand } from "../telegram.error";
@@ -18,25 +18,20 @@ import {
   formatMemberName,
   isGroupContext,
 } from "../telegram.utils";
+import type { TelegramDeps } from "../telegram.types";
 
 const PURCHASE_LIST_LIMIT = 10;
 
-export type ListCommandDependencies = Pick<
-  Context.Tag.Service<typeof MemberService>,
-  "findTelegramMember" | "findActiveByGroupId"
-> & {
-  findGroupById: Context.Tag.Service<typeof GroupService>["findById"];
-  findAllPurchaseByGroupId: Context.Tag.Service<
-    typeof PurchaseService
-  >["findAllByGroupId"];
-};
-
 export const registerListCommand = (
   bot: Telegraf,
-  dependencies: ListCommandDependencies,
+  runtime: Runtime.Runtime<TelegramDeps>,
 ) => {
   bot.command("list", async (ctx) => {
     const commandFlow = Effect.gen(function* () {
+      const memberService = yield* MemberService;
+      const groupService = yield* GroupService;
+      const purchaseService = yield* PurchaseService;
+
       if (!isGroupContext(ctx)) {
         return yield* Effect.fail(
           new IncorrectTelegramCommand({
@@ -50,20 +45,20 @@ export const registerListCommand = (
 
       const tgChatId = String(ctx.chat.id);
       const tgUserId = String(ctx.from.id);
-      const sender = yield* dependencies.findTelegramMember({
+      const sender = yield* memberService.findTelegramMember({
         tg_chat_id: tgChatId,
         tg_user_id: tgUserId,
       });
       const t = yield* getGroupLocale(
-        dependencies.findGroupById,
+        groupService.findById,
         sender.group_id,
       );
 
-      const purchases = yield* dependencies.findAllPurchaseByGroupId(
+      const purchases = yield* purchaseService.findAllByGroupId(
         sender.group_id,
       );
 
-      const members = yield* dependencies.findActiveByGroupId(sender.group_id);
+      const members = yield* memberService.findActiveByGroupId(sender.group_id);
       const replyMessage = formatPurchasesReply({ t, purchases, members });
 
       return yield* Effect.promise(() =>
@@ -74,6 +69,7 @@ export const registerListCommand = (
     });
 
     return runTelegramCommand(
+      runtime,
       ctx,
       {
         command: "/list",

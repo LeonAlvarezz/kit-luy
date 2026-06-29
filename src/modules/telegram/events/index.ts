@@ -1,4 +1,4 @@
-import { Context, Effect } from "effect";
+import { Context, Effect, Runtime } from "effect";
 import type { Telegraf } from "telegraf";
 import { message } from "telegraf/filters";
 
@@ -11,40 +11,15 @@ import {
 import { MemberService } from "@/modules/member/member.service";
 import { GroupService } from "@/modules/group/group.service";
 import { InvalidTelegramMemberPayload } from "../telegram.error";
-import {
-  registerRepaymentClaimEvents,
-  type RepaymentClaimEventDependencies,
-} from "./repayment-claim.event";
-import {
-  registerBuyConversationEvents,
-  type BuyConversationEventDependencies,
-} from "./buy-conversation.event";
+import { registerRepaymentClaimEvents } from "./repayment-claim.event";
+import { registerBuyConversationEvents } from "./buy-conversation.event";
 import { getDefaultLocale } from "../lang/group-locale";
-
-export type TelegramEventDependency = Pick<
-  Context.Tag.Service<typeof MemberService>,
-  "registerTelegramMember" | "deactivateTelegramMember"
-> & {
-  updateTelegramChatId: Context.Tag.Service<
-    typeof GroupService
-  >["updateTelegramChatId"];
-} & {
-  repaymentClaimEvents: RepaymentClaimEventDependencies;
-  buyConversationEvents: BuyConversationEventDependencies;
-};
+import type { TelegramDeps } from "../telegram.types";
 
 export const registerTelegramEvents = (
   bot: Telegraf,
-  dependencies: TelegramEventDependency,
+  runtime: Runtime.Runtime<TelegramDeps>,
 ) => {
-  const {
-    updateTelegramChatId,
-    registerTelegramMember,
-    deactivateTelegramMember,
-    repaymentClaimEvents,
-    buyConversationEvents,
-  } = dependencies;
-
   bot.on(message("new_chat_members"), async (ctx) => {
     const membersToRegister = ctx.message.new_chat_members.filter(
       (member) => !member.is_bot,
@@ -63,9 +38,11 @@ export const registerTelegramEvents = (
       );
 
     const register = (chat: TelegramChat, user: TelegramUser) =>
-      toRegisterPayloadEffect(chat, user).pipe(
-        Effect.flatMap((payload) => registerTelegramMember(payload)),
-      );
+      Effect.gen(function* () {
+        const memberService = yield* MemberService;
+        const payload = yield* toRegisterPayloadEffect(chat, user);
+        return yield* memberService.registerTelegramMember(payload);
+      });
 
     const registerNewMembers = Effect.forEach(
       membersToRegister,
@@ -77,7 +54,7 @@ export const registerTelegramEvents = (
       (member) => member.id === ctx.botInfo.id,
     );
 
-    return Effect.runPromise(registerNewMembers).then(() => {
+    return Runtime.runPromise(runtime)(registerNewMembers).then(() => {
       if (botWasAdded) {
         return ctx.reply(getDefaultLocale().bot.added());
       }
@@ -107,11 +84,13 @@ export const registerTelegramEvents = (
       );
 
     const deactivate = (chat: TelegramChat, user: TelegramUser) =>
-      toDeactivatePayloadEffect(chat, user).pipe(
-        Effect.flatMap((payload) => deactivateTelegramMember(payload)),
-      );
+      Effect.gen(function* () {
+        const memberService = yield* MemberService;
+        const payload = yield* toDeactivatePayloadEffect(chat, user);
+        return yield* memberService.deactivateTelegramMember(payload);
+      });
 
-    return Effect.runPromise(
+    return Runtime.runPromise(runtime)(
       deactivate(ctx.chat, ctx.message.left_chat_member),
     );
   });
@@ -124,7 +103,12 @@ export const registerTelegramEvents = (
       `Group migrated! Updating chat ID from ${oldChatId} to ${newChatId}`,
     );
 
-    return Effect.runPromise(updateTelegramChatId(oldChatId, newChatId));
+    return Runtime.runPromise(runtime)(
+      Effect.gen(function* () {
+        const groupService = yield* GroupService;
+        return yield* groupService.updateTelegramChatId(oldChatId, newChatId);
+      }),
+    );
   });
 
   bot.on(message("migrate_to_chat_id"), (ctx) => {
@@ -135,9 +119,14 @@ export const registerTelegramEvents = (
       `Group migrated! Updating chat ID from ${oldChatId} to ${newChatId}`,
     );
 
-    return Effect.runPromise(updateTelegramChatId(oldChatId, newChatId));
+    return Runtime.runPromise(runtime)(
+      Effect.gen(function* () {
+        const groupService = yield* GroupService;
+        return yield* groupService.updateTelegramChatId(oldChatId, newChatId);
+      }),
+    );
   });
 
-  registerBuyConversationEvents(bot, buyConversationEvents);
-  registerRepaymentClaimEvents(bot, repaymentClaimEvents);
+  registerBuyConversationEvents(bot, runtime);
+  registerRepaymentClaimEvents(bot, runtime);
 };

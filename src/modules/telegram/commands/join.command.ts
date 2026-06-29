@@ -1,4 +1,4 @@
-import { Context, Effect } from "effect";
+import { Context, Effect, Runtime } from "effect";
 import type { Telegraf } from "telegraf";
 
 import {
@@ -15,19 +15,15 @@ import { isGroupContext } from "../telegram.utils";
 import { runTelegramCommand } from "./command-error";
 import { MemberService } from "@/modules/member/member.service";
 import { getDefaultLocale } from "../lang/group-locale";
-
-export type JoinCommandDependencies = {
-  readonly registerTelegramMember: Context.Tag.Service<
-    typeof MemberService
-  >["registerTelegramMember"];
-};
+import type { TelegramDeps } from "../telegram.types";
 
 export const registerJoinCommand = (
   bot: Telegraf,
-  dependencies: JoinCommandDependencies,
+  runtime: Runtime.Runtime<TelegramDeps>,
 ) => {
   bot.command("join", async (ctx) => {
     const commandFlow = Effect.gen(function* () {
+      const memberService = yield* MemberService;
       const t = getDefaultLocale();
       if (!isGroupContext(ctx)) {
         return yield* Effect.fail(
@@ -50,7 +46,7 @@ export const registerJoinCommand = (
               }),
             );
           }
-          return yield* dependencies.registerTelegramMember(payload);
+          return yield* memberService.registerTelegramMember(payload);
         });
 
       return yield* register(ctx.chat, ctx.from).pipe(
@@ -65,6 +61,7 @@ export const registerJoinCommand = (
     });
 
     return runTelegramCommand(
+      runtime,
       ctx,
       {
         command: "/join",

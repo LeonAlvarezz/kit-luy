@@ -16,7 +16,7 @@ describe("getLocale", () => {
     const t = getLocale(GROUP_LANG_ENUM.KH);
 
     expect(String(t.lang.current({ language: GROUP_LANG_ENUM.KH }))).toBe(
-      "ភាសាបច្ចុប្បន្ន៖ kh។",
+      "ភាសាបច្ចុប្បន្ន: kh។",
     );
   });
 });

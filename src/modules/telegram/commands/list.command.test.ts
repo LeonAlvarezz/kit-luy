@@ -70,9 +70,14 @@ const createListContext = (
     },
   }) as unknown as TelegrafContext;
 
-const setupListCommand = (
-  dependencies: Parameters<typeof registerListCommand>[1],
-) => {
+import { createMockRuntime } from "../test-utils";
+
+const setupListCommand = (mocks: {
+  findTelegramMember?: any;
+  findGroupById?: any;
+  findAllPurchaseByGroupId?: any;
+  findActiveByGroupId?: any;
+}) => {
   let listHandler:
     | ((ctx: TelegrafContext) => Promise<unknown> | unknown)
     | undefined;
@@ -84,7 +89,20 @@ const setupListCommand = (
     },
   } as unknown as Telegraf;
 
-  registerListCommand(bot, dependencies);
+  const runtime = createMockRuntime({
+    memberService: {
+      findTelegramMember: mocks.findTelegramMember,
+      findActiveByGroupId: mocks.findActiveByGroupId,
+    },
+    groupService: {
+      findById: mocks.findGroupById ?? (() => Effect.succeed(undefined)),
+    },
+    purchaseService: {
+      findAllByGroupId: mocks.findAllPurchaseByGroupId,
+    },
+  });
+
+  registerListCommand(bot, runtime);
 
   expect(listHandler).toBeDefined();
   return listHandler;
@@ -128,7 +146,7 @@ describe("registerListCommand", () => {
     await listHandler?.(createListContext(replies, replyOptions));
 
     expect(replies).toEqual([
-      "Recent active purchases:\n   - <b>#2</b> <code>$1.25</code> paid by John &amp; Co on 2026-06-03\n   - <b>#1</b> <code>$2.50</code> paid by Peter on 2026-06-01",
+      "Recent purchases:\n   - #<code>2</code> <code>$1.25</code> paid by John &amp; Co on 2026-06-03 00:00\n   - #<code>1</code> <code>$2.50</code> paid by Peter on 2026-06-01 00:00",
     ]);
     expect(replyOptions).toEqual([{ parse_mode: "HTML" }]);
   });

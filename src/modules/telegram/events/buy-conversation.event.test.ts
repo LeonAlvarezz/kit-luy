@@ -9,8 +9,10 @@ import {
   TelegramConversationFlow,
   TelegramConversationStatus,
   type TelegramConversationModel,
+  type BuyConversationPayload,
 } from "@/modules/telegram-conversation/telegram-conversation.model";
 import { registerBuyConversationEvents } from "./buy-conversation.event";
+import { createMockRuntime } from "../test-utils";
 
 const createMember = (
   id: number,
@@ -89,9 +91,18 @@ const createActionContext = (
 
 describe("registerBuyConversationEvents", () => {
   const setup = (
-    overrides: Partial<
-      Parameters<typeof registerBuyConversationEvents>[1]
-    > = {},
+    overrides: {
+      findTelegramMember?: (payload: { tg_chat_id: string; tg_user_id: string }) => Effect.Effect<any, any, any>;
+      findActiveByGroupId?: (group_id: number) => Effect.Effect<any, any, any>;
+      findGroupById?: (id: number) => Effect.Effect<any, any, any>;
+      createPurchaseWithAllocations?: (payload: any) => Effect.Effect<any, any, any>;
+      findActiveSession?: (payload: { group_id: number; member_id: number }) => Effect.Effect<any, any, any>;
+      findSessionById?: (id: number) => Effect.Effect<any, any, any>;
+      updateSession?: (id: number, payload: { step: BuyConversationStep; payload: BuyConversationPayload }) => Effect.Effect<any, any, any>;
+      completeSession?: (id: number) => Effect.Effect<any, any, any>;
+      cancelSession?: (id: number) => Effect.Effect<any, any, any>;
+      cancelActiveSession?: (payload: { group_id: number; member_id: number }) => Effect.Effect<any, any, any>;
+    } = {},
   ) => {
     let textHandler:
       | ((
@@ -113,39 +124,47 @@ describe("registerBuyConversationEvents", () => {
     } as unknown as Telegraf;
     const payer = createMember(1, { tg_user_id: "1001", alias: "payer" });
     const otherMember = createMember(2);
-    const dependencies: Parameters<typeof registerBuyConversationEvents>[1] = {
-      findTelegramMember: () => Effect.succeed(payer),
-      findActiveByGroupId: () => Effect.succeed([payer, otherMember]),
-      findGroupById: () => Effect.succeed(undefined),
-      createPurchaseWithAllocations: (payload) =>
-        Effect.succeed({
-          purchase: { id: 9, ...payload.purchase, voided_at: null },
-          allocations: payload.allocations.map((allocation, index) => ({
-            id: index + 1,
-            purchase_id: 9,
-            ...allocation,
-          })),
-        }),
-      findActiveSession: () => Effect.succeed(createSession()),
-      findSessionById: () => Effect.succeed(createSession()),
-      updateSession: (id, payload) =>
-        Effect.succeed(
-          createSession({
-            id,
-            step: payload.step,
-            payload_json: JSON.stringify(payload.payload),
-          }),
-        ),
-      completeSession: (id) => Effect.succeed(createSession({ id })),
-      cancelSession: (id) =>
-        Effect.succeed(
-          createSession({ id, status: TelegramConversationStatus.CANCELLED }),
-        ),
-      cancelActiveSession: () => Effect.void,
-      ...overrides,
-    };
 
-    registerBuyConversationEvents(bot, dependencies);
+    const runtime = createMockRuntime({
+      memberService: {
+        findTelegramMember: overrides.findTelegramMember ?? (() => Effect.succeed(payer)),
+        findActiveByGroupId: overrides.findActiveByGroupId ?? (() => Effect.succeed([payer, otherMember])),
+      },
+      groupService: {
+        findById: overrides.findGroupById ?? (() => Effect.succeed(undefined)),
+      },
+      purchaseService: {
+        createWithAllocations: overrides.createPurchaseWithAllocations ?? ((payload: any) =>
+          Effect.succeed({
+            purchase: { id: 9, ...payload.purchase, voided_at: null },
+            allocations: payload.allocations.map((allocation: any, index: number) => ({
+              id: index + 1,
+              purchase_id: 9,
+              ...allocation,
+            })),
+          })),
+      },
+      telegramConversationService: {
+        findActiveSession: overrides.findActiveSession ?? (() => Effect.succeed(createSession())),
+        findSessionById: overrides.findSessionById ?? (() => Effect.succeed(createSession())),
+        updateSession: overrides.updateSession ?? ((id: number, payload: { step: BuyConversationStep; payload: BuyConversationPayload }) =>
+          Effect.succeed(
+            createSession({
+              id,
+              step: payload.step,
+              payload_json: JSON.stringify(payload.payload),
+            }),
+          )),
+        completeSession: overrides.completeSession ?? ((id: number) => Effect.succeed(createSession({ id }))),
+        cancelSession: overrides.cancelSession ?? ((id: number) =>
+          Effect.succeed(
+            createSession({ id, status: TelegramConversationStatus.CANCELLED }),
+          )),
+        cancelActiveSession: overrides.cancelActiveSession ?? (() => Effect.void),
+      },
+    });
+
+    registerBuyConversationEvents(bot, runtime);
     expect(textHandler).toBeDefined();
     expect(actionHandler).toBeDefined();
     return { textHandler, actionHandler };
@@ -154,13 +173,9 @@ describe("registerBuyConversationEvents", () => {
   test("amount reply advances to member picker", async () => {
     const replies: string[] = [];
     const replyOptions: unknown[] = [];
-    let updatePayload:
-      | Parameters<
-          Parameters<typeof registerBuyConversationEvents>[1]["updateSession"]
-        >[1]
-      | undefined;
+    let updatePayload: { step: BuyConversationStep; payload: BuyConversationPayload } | undefined;
     const { textHandler } = setup({
-      updateSession: (id, payload) => {
+      updateSession: (id: number, payload: { step: BuyConversationStep; payload: BuyConversationPayload }) => {
         updatePayload = payload;
         return Effect.succeed(
           createSession({
@@ -263,11 +278,11 @@ describe("registerBuyConversationEvents", () => {
             }),
           }),
         ),
-      createPurchaseWithAllocations: (payload) => {
+      createPurchaseWithAllocations: (payload: any) => {
         createdPayload = payload;
         return Effect.succeed({
           purchase: { id: 9, ...payload.purchase, voided_at: null },
-          allocations: payload.allocations.map((allocation, index) => ({
+          allocations: payload.allocations.map((allocation: any, index: number) => ({
             id: index + 1,
             purchase_id: 9,
             ...allocation,
@@ -311,11 +326,11 @@ describe("registerBuyConversationEvents", () => {
             }),
           }),
         ),
-      createPurchaseWithAllocations: (payload) => {
+      createPurchaseWithAllocations: (payload: any) => {
         createdPayload = payload;
         return Effect.succeed({
           purchase: { id: 10, ...payload.purchase, voided_at: null },
-          allocations: payload.allocations.map((allocation, index) => ({
+          allocations: payload.allocations.map((allocation: any, index: number) => ({
             id: index + 1,
             purchase_id: 10,
             ...allocation,

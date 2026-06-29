@@ -1,32 +1,26 @@
-import { Context, Effect } from "effect";
+import { Context, Effect, Runtime } from "effect";
 import type { Telegraf } from "telegraf";
 
-import type { GroupService } from "@/modules/group/group.service";
-import type { MemberService } from "@/modules/member/member.service";
-import type { PurchaseService } from "@/modules/purchase/purchase.service";
+import { GroupService } from "@/modules/group/group.service";
+import { MemberService } from "@/modules/member/member.service";
+import { PurchaseService } from "@/modules/purchase/purchase.service";
 import { calculateRepayments } from "@/modules/purchase/purchase.utils";
 import { runTelegramCommand } from "./command-error";
 import { createMemberLookup, formatRepayments } from "./settle.utils";
 import { IncorrectTelegramCommand } from "../telegram.error";
 import { isGroupContext } from "../telegram.utils";
 import { getDefaultLocale, getGroupLocale } from "../lang/group-locale";
-
-export type SettleCommandDependencies = Pick<
-  Context.Tag.Service<typeof MemberService>,
-  "findTelegramMember" | "findActiveByGroupId"
-> & {
-  findGroupById: Context.Tag.Service<typeof GroupService>["findById"];
-  findSettlementBalancesByGroupId: Context.Tag.Service<
-    typeof PurchaseService
-  >["findSettlementBalancesByGroupId"];
-};
+import type { TelegramDeps } from "../telegram.types";
 
 export const registerSettleCommand = (
   bot: Telegraf,
-  dependencies: SettleCommandDependencies,
+  runtime: Runtime.Runtime<TelegramDeps>,
 ) => {
   bot.command("settle", async (ctx) => {
     const commandFlow = Effect.gen(function* () {
+      const memberService = yield* MemberService;
+      const groupService = yield* GroupService;
+      const purchaseService = yield* PurchaseService;
       if (!isGroupContext(ctx)) {
         return yield* Effect.fail(
           new IncorrectTelegramCommand({
@@ -38,15 +32,15 @@ export const registerSettleCommand = (
         );
       }
 
-      const sender = yield* dependencies.findTelegramMember({
+      const sender = yield* memberService.findTelegramMember({
         tg_chat_id: String(ctx.chat.id),
         tg_user_id: String(ctx.from.id),
       });
-      const t = yield* getGroupLocale(dependencies.findGroupById, sender.group_id);
+      const t = yield* getGroupLocale(groupService.findById, sender.group_id);
 
       const [members, balances] = yield* Effect.all([
-        dependencies.findActiveByGroupId(sender.group_id),
-        dependencies.findSettlementBalancesByGroupId(sender.group_id),
+        memberService.findActiveByGroupId(sender.group_id),
+        purchaseService.findSettlementBalancesByGroupId(sender.group_id),
       ]);
 
       const memberById = createMemberLookup(members);
@@ -68,6 +62,7 @@ export const registerSettleCommand = (
     });
 
     return runTelegramCommand(
+      runtime,
       ctx,
       {
         command: "/settle",

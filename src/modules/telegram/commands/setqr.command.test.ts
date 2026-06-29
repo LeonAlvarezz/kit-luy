@@ -4,6 +4,7 @@ import type { Context as TelegrafContext, Telegraf } from "telegraf";
 
 import { registerSetQrCommand } from "./setqr.command";
 import { getDefaultLocale } from "../lang/group-locale";
+import { createMockRuntime } from "../test-utils";
 
 describe("setqr command", () => {
   const t = getDefaultLocale();
@@ -23,7 +24,14 @@ describe("setqr command", () => {
 
     const mockUpdatePaymentQr = () => Effect.succeed({} as any);
 
-    registerSetQrCommand(bot, { updatePaymentQr: mockUpdatePaymentQr });
+    registerSetQrCommand(
+      bot,
+      createMockRuntime({
+        telegramUserService: {
+          updatePaymentQr: mockUpdatePaymentQr,
+        },
+      }),
+    );
 
     const replies: string[] = [];
     const ctx = {
@@ -56,7 +64,14 @@ describe("setqr command", () => {
 
     const mockUpdatePaymentQr = () => Effect.succeed({} as any);
 
-    registerSetQrCommand(bot, { updatePaymentQr: mockUpdatePaymentQr });
+    registerSetQrCommand(
+      bot,
+      createMockRuntime({
+        telegramUserService: {
+          updatePaymentQr: mockUpdatePaymentQr,
+        },
+      }),
+    );
 
     const replies: string[] = [];
     const ctx = {
@@ -97,7 +112,14 @@ describe("setqr command", () => {
       return Effect.succeed({} as any);
     };
 
-    registerSetQrCommand(bot, { updatePaymentQr: mockUpdatePaymentQr });
+    registerSetQrCommand(
+      bot,
+      createMockRuntime({
+        telegramUserService: {
+          updatePaymentQr: mockUpdatePaymentQr,
+        },
+      }),
+    );
 
     const replies: string[] = [];
     const ctx = {
@@ -146,7 +168,14 @@ describe("setqr command", () => {
       return Effect.succeed({} as any);
     };
 
-    registerSetQrCommand(bot, { updatePaymentQr: mockUpdatePaymentQr });
+    registerSetQrCommand(
+      bot,
+      createMockRuntime({
+        telegramUserService: {
+          updatePaymentQr: mockUpdatePaymentQr,
+        },
+      }),
+    );
 
     const replies: string[] = [];
     const ctx = {

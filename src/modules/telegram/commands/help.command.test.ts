@@ -5,6 +5,7 @@ import {
   registerHelpCommand,
   TELEGRAM_COMMAND_HELP_MESSAGE,
 } from "./help.command";
+import { createMockRuntime } from "../test-utils";
 
 describe("TELEGRAM_COMMAND_HELP_MESSAGE", () => {
   test("lists every registered command", () => {
@@ -32,7 +33,7 @@ describe("TELEGRAM_COMMAND_HELP_MESSAGE", () => {
       },
     } as unknown as Telegraf;
 
-    registerHelpCommand(bot);
+    registerHelpCommand(bot, createMockRuntime({}));
 
     expect(helpHandler).toBeDefined();
     await helpHandler?.({

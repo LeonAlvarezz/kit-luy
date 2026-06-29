@@ -1,35 +1,27 @@
-import { Context, Effect } from "effect";
+import { Context, Effect, Runtime } from "effect";
 import type { Telegraf } from "telegraf";
 
-import type { GroupService } from "@/modules/group/group.service";
-import type { MemberService } from "@/modules/member/member.service";
-import type { TelegramUserService } from "@/modules/telegram-user/telegram-user.service";
+import { GroupService } from "@/modules/group/group.service";
+import { MemberService } from "@/modules/member/member.service";
+import { TelegramUserService } from "@/modules/telegram-user/telegram-user.service";
 import { IncorrectTelegramCommand } from "../telegram.error";
 import { formatMemberName, isSettlementGroupChat } from "../telegram.utils";
 import { runTelegramCommand } from "./command-error";
 import { getDefaultLocale, getGroupLocale } from "../lang/group-locale";
-
-export type QrCommandDependencies = Pick<
-  Context.Tag.Service<typeof MemberService>,
-  "findTelegramMember" | "findActiveByGroupId"
-> & {
-  readonly findGroupById: Context.Tag.Service<typeof GroupService>["findById"];
-  readonly findByTgUserId: Context.Tag.Service<
-    typeof TelegramUserService
-  >["findByTgUserId"];
-  readonly findByUsername: Context.Tag.Service<
-    typeof TelegramUserService
-  >["findByUsername"];
-};
+import type { TelegramDeps } from "../telegram.types";
 
 const qrCommandRegex = /^\/qr(?:@\w+)?(?:\s+(.+))?$/i;
 
 export const registerQrCommand = (
   bot: Telegraf,
-  dependencies: QrCommandDependencies,
+  runtime: Runtime.Runtime<TelegramDeps>,
 ) => {
   bot.command("qr", async (ctx) => {
     const commandFlow = Effect.gen(function* () {
+      const memberService = yield* MemberService;
+      const groupService = yield* GroupService;
+      const telegramUserService = yield* TelegramUserService;
+
       const defaultT = getDefaultLocale();
 
       if (!ctx.chat || !ctx.from) {
@@ -61,18 +53,18 @@ export const registerQrCommand = (
       // 1. Group Chat Flow
       if (isSettlementGroupChat(ctx.chat)) {
         const tgChatId = String(ctx.chat.id);
-        const sender = yield* dependencies.findTelegramMember({
+        const sender = yield* memberService.findTelegramMember({
           tg_chat_id: tgChatId,
           tg_user_id: tgUserId,
         });
         const t = yield* getGroupLocale(
-          dependencies.findGroupById,
+          groupService.findById,
           sender.group_id,
         );
 
         // Subflow: Get another user's QR
         if (targetUsername) {
-          const members = yield* dependencies.findActiveByGroupId(
+          const members = yield* memberService.findActiveByGroupId(
             sender.group_id,
           );
           const targetMember = members.find(
@@ -98,7 +90,7 @@ export const registerQrCommand = (
             );
           }
 
-          const tgUser = yield* dependencies.findByTgUserId(targetTgUserId);
+          const tgUser = yield* telegramUserService.findByTgUserId(targetTgUserId);
           const paymentQrFileId = tgUser?.payment_qr_file_id;
           if (paymentQrFileId) {
             const displayName = formatMemberName(targetMember);
@@ -119,7 +111,7 @@ export const registerQrCommand = (
         }
 
         // Subflow: Get sender's own QR in group chat
-        const tgUser = yield* dependencies.findByTgUserId(tgUserId);
+        const tgUser = yield* telegramUserService.findByTgUserId(tgUserId);
         const paymentQrFileId = tgUser?.payment_qr_file_id;
         if (paymentQrFileId) {
           return yield* Effect.promise(() =>
@@ -140,7 +132,7 @@ export const registerQrCommand = (
 
       // Subflow: Get another user's QR globally by username in private chat
       if (targetUsername) {
-        const tgUser = yield* dependencies.findByUsername(targetUsername);
+        const tgUser = yield* telegramUserService.findByUsername(targetUsername);
         const paymentQrFileId = tgUser?.payment_qr_file_id;
         if (paymentQrFileId) {
           const displayName = tgUser.display_name ?? `@${tgUser.username}`;
@@ -161,7 +153,7 @@ export const registerQrCommand = (
       }
 
       // Subflow: Get sender's own QR in private chat
-      const tgUser = yield* dependencies.findByTgUserId(tgUserId);
+      const tgUser = yield* telegramUserService.findByTgUserId(tgUserId);
       const paymentQrFileId = tgUser?.payment_qr_file_id;
       if (paymentQrFileId) {
         return yield* Effect.promise(() =>
@@ -178,6 +170,7 @@ export const registerQrCommand = (
     });
 
     return runTelegramCommand(
+      runtime,
       ctx,
       {
         command: "/qr",

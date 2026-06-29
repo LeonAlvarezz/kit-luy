@@ -2,10 +2,10 @@ import { Telegraf } from "telegraf";
 
 import { parsePaidCommand } from "../parsers/paid.parser";
 import { runTelegramCommand } from "./command-error";
-import { Context, Effect } from "effect";
+import { Context, Effect, Runtime } from "effect";
 import { IncorrectTelegramCommand } from "../telegram.error";
 import { isGroupContext } from "../telegram.utils";
-import type { GroupService } from "@/modules/group/group.service";
+import { GroupService } from "@/modules/group/group.service";
 import { MemberService } from "@/modules/member/member.service";
 import { PurchaseService } from "@/modules/purchase/purchase.service";
 import {
@@ -16,25 +16,19 @@ import { RepaymentClaimService } from "@/modules/repayment/repayment-claim.servi
 import { RepaymentClaimStatus } from "@/modules/repayment/repayment-claim.model";
 import { formatAmount } from "@/shared/currency";
 import { getDefaultLocale, getGroupLocale } from "../lang/group-locale";
+import type { TelegramDeps } from "../telegram.types";
 
-export type PaidCommandDependencies = Pick<
-  Context.Tag.Service<typeof MemberService>,
-  "findTelegramMember" | "findActiveByGroupId"
-> & {
-  findGroupById: Context.Tag.Service<typeof GroupService>["findById"];
-  findSettlementBalancesByGroupId: Context.Tag.Service<
-    typeof PurchaseService
-  >["findSettlementBalancesByGroupId"];
-  createRepaymentClaim: Context.Tag.Service<
-    typeof RepaymentClaimService
-  >["create"];
-};
 export const registerPaidCommand = (
   bot: Telegraf,
-  dependencies: PaidCommandDependencies,
+  runtime: Runtime.Runtime<TelegramDeps>,
 ) => {
   bot.command("paid", async (ctx) => {
     const commandFlow = Effect.gen(function* () {
+      const memberService = yield* MemberService;
+      const groupService = yield* GroupService;
+      const purchaseService = yield* PurchaseService;
+      const repaymentClaimService = yield* RepaymentClaimService;
+
       const result = parsePaidCommand(ctx.message.text);
       if (!result.ok) {
         return yield* Effect.fail(
@@ -58,13 +52,13 @@ export const registerPaidCommand = (
 
       const { command } = result;
 
-      const sender = yield* dependencies.findTelegramMember({
+      const sender = yield* memberService.findTelegramMember({
         tg_chat_id: String(ctx.chat.id),
         tg_user_id: String(ctx.from.id),
       });
-      const t = yield* getGroupLocale(dependencies.findGroupById, sender.group_id);
+      const t = yield* getGroupLocale(groupService.findById, sender.group_id);
 
-      const balances = yield* dependencies.findSettlementBalancesByGroupId(
+      const balances = yield* purchaseService.findSettlementBalancesByGroupId(
         sender.group_id,
       );
 
@@ -82,7 +76,7 @@ export const registerPaidCommand = (
         command.type === "first"
           ? repayments[0]
           : yield* Effect.gen(function* () {
-              const members = yield* dependencies.findActiveByGroupId(
+              const members = yield* memberService.findActiveByGroupId(
                 sender.group_id,
               );
               const receiver = members.find(
@@ -131,7 +125,7 @@ export const registerPaidCommand = (
         );
       }
 
-      const repaymentClaim = yield* dependencies.createRepaymentClaim({
+      const repaymentClaim = yield* repaymentClaimService.create({
         status: RepaymentClaimStatus.PENDING,
         amount_cents: amountCents,
         group_id: sender.group_id,
@@ -167,6 +161,7 @@ export const registerPaidCommand = (
     });
 
     return runTelegramCommand(
+      runtime,
       ctx,
       {
         command: "/paid",

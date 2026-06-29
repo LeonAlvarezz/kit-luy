@@ -69,9 +69,14 @@ const createVoidContext = (
     },
   }) as unknown as TelegrafContext;
 
-const setupVoidCommand = (
-  dependencies: Parameters<typeof registerVoidCommand>[1],
-) => {
+import { createMockRuntime } from "../test-utils";
+
+const setupVoidCommand = (mocks: {
+  findTelegramMember?: (payload: { tg_chat_id: string; tg_user_id: string }) => Effect.Effect<any, any, any>;
+  findGroupById?: (id: number) => Effect.Effect<any, any, any>;
+  findPurchaseById?: (id: number) => Effect.Effect<any, any, any>;
+  updatePurchase?: (id: number, payload: any) => Effect.Effect<any, any, any>;
+}) => {
   let voidHandler:
     | ((ctx: TelegrafContext) => Promise<unknown> | unknown)
     | undefined;
@@ -83,7 +88,20 @@ const setupVoidCommand = (
     },
   } as unknown as Telegraf;
 
-  registerVoidCommand(bot, dependencies);
+  const runtime = createMockRuntime({
+    memberService: {
+      findTelegramMember: mocks.findTelegramMember,
+    },
+    groupService: {
+      findById: mocks.findGroupById,
+    },
+    purchaseService: {
+      findById: mocks.findPurchaseById,
+      update: mocks.updatePurchase,
+    },
+  });
+
+  registerVoidCommand(bot, runtime);
 
   expect(voidHandler).toBeDefined();
   return voidHandler;

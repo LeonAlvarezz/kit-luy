@@ -1,4 +1,4 @@
-import { Cause, Effect } from "effect";
+import { Cause, Effect, Runtime } from "effect";
 import type { Context as TelegrafContext } from "telegraf";
 
 import {
@@ -39,17 +39,17 @@ export const logAndReplyCommandError =
     }).pipe(Effect.zipRight(Effect.promise(() => ctx.reply(message))));
   };
 
-export const runTelegramCommand = <A, E>(
+export const runTelegramCommand = <A, E, R>(
+  runtime: Runtime.Runtime<R>,
   ctx: TelegrafContext,
   options: {
     readonly command: string;
     readonly fallbackMessage?: string;
   },
-  effect: Effect.Effect<A, E, never>,
+  effect: Effect.Effect<A, E, R>,
 ) =>
-  Effect.runPromise(
+  Runtime.runPromise(runtime)(
     effect.pipe(
       Effect.catchAllCause(logAndReplyCommandError(ctx, options)),
-      Effect.provide(LoggerLive),
     ),
   );

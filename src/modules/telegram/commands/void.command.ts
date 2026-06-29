@@ -1,7 +1,7 @@
-import { Context, Effect } from "effect";
+import { Context, Effect, Runtime } from "effect";
 import type { Telegraf } from "telegraf";
 
-import type { GroupService } from "@/modules/group/group.service";
+import { GroupService } from "@/modules/group/group.service";
 import { MemberService } from "@/modules/member/member.service";
 import { PurchaseStatus } from "@/modules/purchase/purchase.model";
 import { PurchaseService } from "@/modules/purchase/purchase.service";
@@ -9,22 +9,18 @@ import { IncorrectTelegramCommand } from "../telegram.error";
 import { getDefaultLocale, getGroupLocale } from "../lang/group-locale";
 import { isGroupContext } from "../telegram.utils";
 import { runTelegramCommand } from "./command-error";
-
-export type VoidCommandDependencies = Pick<
-  Context.Tag.Service<typeof MemberService>,
-  "findTelegramMember"
-> & {
-  findGroupById: Context.Tag.Service<typeof GroupService>["findById"];
-  findPurchaseById: Context.Tag.Service<typeof PurchaseService>["findById"];
-  updatePurchase: Context.Tag.Service<typeof PurchaseService>["update"];
-};
+import type { TelegramDeps } from "../telegram.types";
 
 export const registerVoidCommand = (
   bot: Telegraf,
-  dependencies: VoidCommandDependencies,
+  runtime: Runtime.Runtime<TelegramDeps>,
 ) => {
   bot.command("void", async (ctx) => {
     const commandFlow = Effect.gen(function* () {
+      const memberService = yield* MemberService;
+      const groupService = yield* GroupService;
+      const purchaseService = yield* PurchaseService;
+
       const purchaseId = parseVoidCommand(ctx.message.text);
 
       if (purchaseId === null) {
@@ -47,15 +43,12 @@ export const registerVoidCommand = (
         );
       }
 
-      const sender = yield* dependencies.findTelegramMember({
+      const sender = yield* memberService.findTelegramMember({
         tg_chat_id: String(ctx.chat.id),
         tg_user_id: String(ctx.from.id),
       });
-      const t = yield* getGroupLocale(
-        dependencies.findGroupById,
-        sender.group_id,
-      );
-      const purchase = yield* dependencies.findPurchaseById(purchaseId);
+      const t = yield* getGroupLocale(groupService.findById, sender.group_id);
+      const purchase = yield* purchaseService.findById(purchaseId);
 
       if (purchase.group_id !== sender.group_id) {
         return yield* Effect.fail(
@@ -84,7 +77,7 @@ export const registerVoidCommand = (
         );
       }
 
-      const voidedPurchase = yield* dependencies.updatePurchase(purchase.id, {
+      const voidedPurchase = yield* purchaseService.update(purchase.id, {
         status: PurchaseStatus.VOIDED,
         voided_at: Date.now(),
       });
@@ -95,6 +88,7 @@ export const registerVoidCommand = (
     });
 
     return runTelegramCommand(
+      runtime,
       ctx,
       {
         command: "/void",

@@ -4,6 +4,7 @@ import type { Context as TelegrafContext, Telegraf } from "telegraf";
 
 import { registerQrCommand } from "./qr.command";
 import { getDefaultLocale } from "../lang/group-locale";
+import { createMockRuntime } from "../test-utils";
 
 describe("qr command", () => {
   const t = getDefaultLocale();
@@ -13,8 +14,14 @@ describe("qr command", () => {
     findTelegramMember = () => Effect.succeed({ group_id: 1 } as any),
     findActiveByGroupId = () => Effect.succeed([] as any[]),
     findGroupById = () => Effect.succeed({ language: "en" } as any),
-    findByTgUserId = () => Effect.succeed(undefined as any),
-    findByUsername = () => Effect.succeed(undefined as any),
+    findByTgUserId = (_tgUserId: string) => Effect.succeed(undefined as any),
+    findByUsername = (_username: string) => Effect.succeed(undefined as any),
+  }: {
+    findTelegramMember?: (payload: { tg_chat_id: string; tg_user_id: string }) => Effect.Effect<any, any, any>;
+    findActiveByGroupId?: (group_id: number) => Effect.Effect<any, any, any>;
+    findGroupById?: (id: number) => Effect.Effect<any, any, any>;
+    findByTgUserId?: (tgUserId: string) => Effect.Effect<any, any, any>;
+    findByUsername?: (username: string) => Effect.Effect<any, any, any>;
   } = {}) => {
     let commandHandler:
       | ((ctx: TelegrafContext) => Promise<unknown> | unknown)
@@ -27,13 +34,21 @@ describe("qr command", () => {
       },
     } as unknown as Telegraf;
 
-    registerQrCommand(bot, {
-      findTelegramMember,
-      findActiveByGroupId,
-      findGroupById,
-      findByTgUserId,
-      findByUsername,
+    const runtime = createMockRuntime({
+      memberService: {
+        findTelegramMember,
+        findActiveByGroupId,
+      },
+      groupService: {
+        findById: findGroupById,
+      },
+      telegramUserService: {
+        findByTgUserId,
+        findByUsername,
+      },
     });
+
+    registerQrCommand(bot, runtime);
 
     return { commandHandler };
   };

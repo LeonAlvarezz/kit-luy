@@ -2,10 +2,12 @@
 
 ## [PLANS]
 - 2026-06-28T17:03:29+07:00 [USER] Implement `/buy` guided group flow with D1-backed conversation sessions; keep old one-line `/buy ...` syntax working.
+- 2026-06-29T13:40:00+07:00 [USER] Refactor Telegram module to use native Effect Runtime for dependency injection, eliminating prop drilling of service functions to commands/events.
 
 ## [DECISIONS]
 - 2026-06-28T17:03:29+07:00 [CODE] Guided `/buy` stores active sessions in `telegram_conversation_sessions`; sessions expire after 30 minutes and are replaced per `(group_id, member_id)`.
 - 2026-06-28T17:03:29+07:00 [CODE] V1 guided flow supports equal splits only; selected members represent purchase participants, and sender is auto-included if omitted.
+- 2026-06-29T13:40:00+07:00 [CODE] Use `Effect.runtime` to capture the runtime context in `TelegramServiceLive` and pass it to commands/events registration, allowing them to resolve services directly using `yield*`.
 
 ## [PROGRESS]
 - 2026-06-28T17:03:29+07:00 [CODE] Added Telegram conversation model/repository/service, buy text/callback event handlers, `/cancel`, `/buy` session start, help copy, migration `0005_talented_glorian.sql`, and focused tests.
@@ -23,3 +25,4 @@
 
 ## [OUTCOMES]
 - 2026-06-28T17:03:29+07:00 [CODE] `/buy` can now start a persisted group wizard; old advanced `/buy <amount> ...` parser path remains available.
+- 2026-06-29T14:05:00Z [CODE] Refactored all Telegram commands and events to use native Effect Runtime dependency injection, resolving tags via `yield*`. Added synchronous mocked runtime generation for test isolation. Fixed all pre-existing failing assertions and typecheck warnings, resulting in a fully clean typecheck and 100% test pass.

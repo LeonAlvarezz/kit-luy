@@ -1,14 +1,14 @@
-import { Context, Effect } from "effect";
+import { Context, Effect, Runtime } from "effect";
 import type { Context as TelegrafContext, Telegraf } from "telegraf";
 import { message } from "telegraf/filters";
 
-import type { GroupService } from "@/modules/group/group.service";
+import { GroupService } from "@/modules/group/group.service";
 import type { MemberModel } from "@/modules/member/member.model";
-import type { MemberService } from "@/modules/member/member.service";
+import { MemberService } from "@/modules/member/member.service";
 import { AllocationKind } from "@/modules/purchase/purchase-allocation.model";
 import { PurchaseNoActiveMembers } from "@/modules/purchase/purchase.error";
 import { PurchaseStatus } from "@/modules/purchase/purchase.model";
-import type { PurchaseService } from "@/modules/purchase/purchase.service";
+import { PurchaseService } from "@/modules/purchase/purchase.service";
 import { splitEqually, toCents } from "@/modules/purchase/purchase.utils";
 import {
   BuyConversationStep,
@@ -16,7 +16,7 @@ import {
   TelegramConversationFlow,
   TelegramConversationStatus,
 } from "@/modules/telegram-conversation/telegram-conversation.model";
-import type { TelegramConversationService } from "@/modules/telegram-conversation/telegram-conversation.service";
+import { TelegramConversationService } from "@/modules/telegram-conversation/telegram-conversation.service";
 import { formatAmount } from "@/shared/currency";
 import {
   formatBuyAllReply,
@@ -30,43 +30,18 @@ import {
   formatMemberName,
   isGroupContext,
 } from "../telegram.utils";
-
-export type BuyConversationEventDependencies = Pick<
-  Context.Tag.Service<typeof MemberService>,
-  "findTelegramMember" | "findActiveByGroupId"
-> & {
-  findGroupById: Context.Tag.Service<typeof GroupService>["findById"];
-  createPurchaseWithAllocations: Context.Tag.Service<
-    typeof PurchaseService
-  >["createWithAllocations"];
-  findActiveSession: Context.Tag.Service<
-    typeof TelegramConversationService
-  >["findActiveSession"];
-  findSessionById: Context.Tag.Service<
-    typeof TelegramConversationService
-  >["findSessionById"];
-  updateSession: Context.Tag.Service<
-    typeof TelegramConversationService
-  >["updateSession"];
-  completeSession: Context.Tag.Service<
-    typeof TelegramConversationService
-  >["completeSession"];
-  cancelSession: Context.Tag.Service<
-    typeof TelegramConversationService
-  >["cancelSession"];
-  cancelActiveSession: Context.Tag.Service<
-    typeof TelegramConversationService
-  >["cancelActiveSession"];
-};
+import type { TelegramDeps } from "../telegram.types";
 
 export const registerBuyConversationEvents = (
   bot: Telegraf,
-  dependencies: BuyConversationEventDependencies,
+  runtime: Runtime.Runtime<TelegramDeps>,
 ) => {
   bot.command("cancel", async (ctx) => {
     const commandFlow = Effect.gen(function* () {
-      const sender = yield* findSender(ctx, dependencies);
-      yield* dependencies.cancelActiveSession({
+      const memberService = yield* MemberService;
+      const telegramConversationService = yield* TelegramConversationService;
+      const sender = yield* findSender(ctx, memberService);
+      yield* telegramConversationService.cancelActiveSession({
         group_id: sender.group_id,
         member_id: sender.id,
       });
@@ -75,6 +50,7 @@ export const registerBuyConversationEvents = (
     });
 
     return runTelegramCommand(
+      runtime,
       ctx,
       { command: "/cancel", fallbackMessage: "Could not cancel." },
       commandFlow,
@@ -87,9 +63,11 @@ export const registerBuyConversationEvents = (
     }
 
     const commandFlow = Effect.gen(function* () {
-      const sender = yield* findSender(ctx, dependencies);
+      const memberService = yield* MemberService;
+      const telegramConversationService = yield* TelegramConversationService;
+      const sender = yield* findSender(ctx, memberService);
 
-      const session = yield* dependencies.findActiveSession({
+      const session = yield* telegramConversationService.findActiveSession({
         group_id: sender.group_id,
         member_id: sender.id,
       });
@@ -109,7 +87,7 @@ export const registerBuyConversationEvents = (
         );
       }
 
-      const members = yield* dependencies.findActiveByGroupId(sender.group_id);
+      const members = yield* memberService.findActiveByGroupId(sender.group_id);
       if (members.filter((member) => member.id !== sender.id).length <= 0) {
         return yield* Effect.fail(
           new PurchaseNoActiveMembers({
@@ -123,7 +101,7 @@ export const registerBuyConversationEvents = (
         amount,
         selectedMemberIds: [sender.id],
       };
-      const updatedSession = yield* dependencies.updateSession(session.id, {
+      const updatedSession = yield* telegramConversationService.updateSession(session.id, {
         step: BuyConversationStep.MEMBERS,
         payload,
       });
@@ -141,24 +119,31 @@ export const registerBuyConversationEvents = (
     });
 
     return runTelegramCommand(
+      runtime,
       ctx,
       {
-        command: "/buy",
-        fallbackMessage: getDefaultLocale().buy.fallback(),
+        command: "buy conversation flow (text)",
+        fallbackMessage: "Could not process message.",
       },
       commandFlow,
     );
   });
 
   bot.action(
-    /^buy_flow:(toggle|everyone|done|confirm|cancel):(\d+)(?::(\d+))?$/,
+    /^buy_flow:(toggle|everyone|done|done_unselect|confirm|cancel):(\d+)(?::(\d+))?$/,
     async (ctx) => {
       const commandFlow = Effect.gen(function* () {
         const action = ctx.match[1];
         const sessionId = Number(ctx.match[2]);
         const targetMemberId = ctx.match[3] ? Number(ctx.match[3]) : undefined;
-        const sender = yield* findSender(ctx, dependencies);
-        const session = yield* dependencies.findSessionById(sessionId);
+        
+        const memberService = yield* MemberService;
+        const telegramConversationService = yield* TelegramConversationService;
+        const groupService = yield* GroupService;
+        const purchaseService = yield* PurchaseService;
+
+        const sender = yield* findSender(ctx, memberService);
+        const session = yield* telegramConversationService.findSessionById(sessionId);
 
         if (
           !session ||
@@ -174,12 +159,12 @@ export const registerBuyConversationEvents = (
         }
 
         const payload = parsePayload(session.payload_json);
-        const members = yield* dependencies.findActiveByGroupId(
+        const members = yield* memberService.findActiveByGroupId(
           sender.group_id,
         );
 
         if (action === "cancel") {
-          yield* dependencies.cancelSession(session.id);
+          yield* telegramConversationService.cancelSession(session.id);
           yield* Effect.promise(() => ctx.answerCbQuery("Cancelled."));
           return yield* Effect.promise(() => ctx.editMessageText("Cancelled."));
         }
@@ -189,7 +174,7 @@ export const registerBuyConversationEvents = (
             ...payload,
             selectedMemberIds: members.map((member) => member.id),
           };
-          yield* dependencies.updateSession(session.id, {
+          yield* telegramConversationService.updateSession(session.id, {
             step: BuyConversationStep.MEMBERS,
             payload: nextPayload,
           });
@@ -213,7 +198,7 @@ export const registerBuyConversationEvents = (
             ...payload,
             selectedMemberIds: [...selected],
           };
-          yield* dependencies.updateSession(session.id, {
+          yield* telegramConversationService.updateSession(session.id, {
             step: BuyConversationStep.MEMBERS,
             payload: nextPayload,
           });
@@ -234,7 +219,7 @@ export const registerBuyConversationEvents = (
             return;
           }
 
-          yield* dependencies.updateSession(session.id, {
+          yield* telegramConversationService.updateSession(session.id, {
             step: BuyConversationStep.CONFIRM,
             payload,
           });
@@ -265,7 +250,7 @@ export const registerBuyConversationEvents = (
           }
 
           const createdPurchase =
-            yield* dependencies.createPurchaseWithAllocations({
+            yield* purchaseService.createWithAllocations({
               purchase: {
                 group_id: sender.group_id,
                 payer_member_id: sender.id,
@@ -284,10 +269,10 @@ export const registerBuyConversationEvents = (
                 }),
               ),
             });
-          yield* dependencies.completeSession(session.id);
+          yield* telegramConversationService.completeSession(session.id);
 
           const t = yield* getGroupLocale(
-            dependencies.findGroupById,
+            groupService.findById,
             sender.group_id,
           );
           yield* Effect.promise(() => ctx.answerCbQuery("Purchase recorded."));
@@ -307,6 +292,7 @@ export const registerBuyConversationEvents = (
       });
 
       return runTelegramCommand(
+        runtime,
         ctx,
         {
           command: "/buy",
@@ -320,7 +306,7 @@ export const registerBuyConversationEvents = (
 
 const findSender = (
   ctx: TelegrafContext,
-  dependencies: Pick<BuyConversationEventDependencies, "findTelegramMember">,
+  memberService: Context.Tag.Service<typeof MemberService>,
 ) =>
   Effect.gen(function* () {
     if (!isGroupContext(ctx)) {
@@ -334,7 +320,7 @@ const findSender = (
       );
     }
 
-    return yield* dependencies.findTelegramMember({
+    return yield* memberService.findTelegramMember({
       tg_chat_id: String(ctx.chat.id),
       tg_user_id: String(ctx.from.id),
     });

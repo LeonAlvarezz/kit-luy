@@ -1,9 +1,9 @@
-import { Context, Effect } from "effect";
+import { Context, Effect, Runtime } from "effect";
 import type { Telegraf } from "telegraf";
 
-import type { MemberService } from "@/modules/member/member.service";
-import type { GroupService } from "@/modules/group/group.service";
-import type { TelegramConversationService } from "@/modules/telegram-conversation/telegram-conversation.service";
+import { MemberService } from "@/modules/member/member.service";
+import { GroupService } from "@/modules/group/group.service";
+import { TelegramConversationService } from "@/modules/telegram-conversation/telegram-conversation.service";
 import { AllocationKind } from "@/modules/purchase/purchase-allocation.model";
 import {
   PurchaseAllocationTotalMismatch,
@@ -12,7 +12,7 @@ import {
   PurchaseNoActiveMembers,
 } from "@/modules/purchase/purchase.error";
 import { PurchaseStatus } from "@/modules/purchase/purchase.model";
-import type { PurchaseService } from "@/modules/purchase/purchase.service";
+import { PurchaseService } from "@/modules/purchase/purchase.service";
 import { splitEqually, toCents } from "@/modules/purchase/purchase.utils";
 import { formatBuyAllReply, type BeneficiaryAllocation } from "./buy.utils";
 import { runTelegramCommand } from "./command-error";
@@ -21,26 +21,19 @@ import type { BuyAllocation } from "../parsers/buy.parser";
 import { IncorrectTelegramCommand } from "../telegram.error";
 import { isGroupContext } from "../telegram.utils";
 import { getDefaultLocale, getGroupLocale } from "../lang/group-locale";
-
-export type BuyCommandDependencies = Pick<
-  Context.Tag.Service<typeof MemberService>,
-  "findTelegramMember" | "findActiveByGroupId"
-> & {
-  findGroupById: Context.Tag.Service<typeof GroupService>["findById"];
-  createPurchaseWithAllocations: Context.Tag.Service<
-    typeof PurchaseService
-  >["createWithAllocations"];
-  startBuySession: Context.Tag.Service<
-    typeof TelegramConversationService
-  >["startBuySession"];
-};
+import type { TelegramDeps } from "../telegram.types";
 
 export const registerBuyCommand = (
   bot: Telegraf,
-  dependencies: BuyCommandDependencies,
+  runtime: Runtime.Runtime<TelegramDeps>,
 ) => {
   bot.command("buy", async (ctx) => {
     const commandFlow = Effect.gen(function* () {
+      const memberService = yield* MemberService;
+      const groupService = yield* GroupService;
+      const purchaseService = yield* PurchaseService;
+      const telegramConversationService = yield* TelegramConversationService;
+
       if (!isGroupContext(ctx)) {
         return yield* Effect.fail(
           new IncorrectTelegramCommand({
@@ -54,18 +47,18 @@ export const registerBuyCommand = (
 
       const tgChatId = String(ctx.chat.id);
       const tgUserId = String(ctx.from.id);
-      const sender = yield* dependencies.findTelegramMember({
+      const sender = yield* memberService.findTelegramMember({
         tg_chat_id: tgChatId,
         tg_user_id: tgUserId,
       });
 
       const t = yield* getGroupLocale(
-        dependencies.findGroupById,
+        groupService.findById,
         sender.group_id,
       );
 
       if (ctx.message.text.trim().match(/^\/buy(?:@\w+)?$/i)) {
-        yield* dependencies.startBuySession({
+        yield* telegramConversationService.startBuySession({
           group_id: sender.group_id,
           member_id: sender.id,
         });
@@ -92,7 +85,7 @@ export const registerBuyCommand = (
       }
 
       const { command } = result;
-      const members = yield* dependencies.findActiveByGroupId(sender.group_id);
+      const members = yield* memberService.findActiveByGroupId(sender.group_id);
 
       if (command.type === "all") {
         const beneficiaries = members.filter(
@@ -117,7 +110,7 @@ export const registerBuyCommand = (
         const beneficiaryAllocations = allocationsByMember.filter(
           ({ member }) => member.id !== sender.id,
         );
-        const result = yield* dependencies.createPurchaseWithAllocations({
+        const result = yield* purchaseService.createWithAllocations({
           purchase: {
             group_id: sender.group_id,
             payer_member_id: sender.id,
@@ -230,7 +223,7 @@ export const registerBuyCommand = (
         );
 
         const createdPurchase =
-          yield* dependencies.createPurchaseWithAllocations({
+          yield* purchaseService.createWithAllocations({
             purchase: {
               group_id: sender.group_id,
               payer_member_id: sender.id,
@@ -322,7 +315,7 @@ export const registerBuyCommand = (
         ({ member }) => member.id !== sender.id,
       );
 
-      const createdPurchase = yield* dependencies.createPurchaseWithAllocations(
+      const createdPurchase = yield* purchaseService.createWithAllocations(
         {
           purchase: {
             group_id: sender.group_id,
@@ -358,6 +351,7 @@ export const registerBuyCommand = (
     });
 
     return runTelegramCommand(
+      runtime,
       ctx,
       {
         command: "/buy",

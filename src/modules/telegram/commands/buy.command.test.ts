@@ -55,21 +55,16 @@ const createBuyContext = (
     },
   }) as unknown as TelegrafContext;
 
-describe("registerBuyCommand", () => {
-  type BuyCommandTestDependencies = Omit<
-    Parameters<typeof registerBuyCommand>[1],
-    "findGroupById" | "startBuySession"
-  > &
-    Partial<
-      Pick<
-        Parameters<typeof registerBuyCommand>[1],
-        "findGroupById" | "startBuySession"
-      >
-    >;
+import { createMockRuntime } from "../test-utils";
 
-  const setupBuyCommand = (
-    dependencies: BuyCommandTestDependencies,
-  ) => {
+describe("registerBuyCommand", () => {
+  const setupBuyCommand = (mocks: {
+    findTelegramMember?: (payload: { tg_chat_id: string; tg_user_id: string }) => Effect.Effect<any, any, any>;
+    findActiveByGroupId?: (group_id: number) => Effect.Effect<any, any, any>;
+    findGroupById?: (id: number) => Effect.Effect<any, any, any>;
+    createPurchaseWithAllocations?: (payload: any) => Effect.Effect<any, any, any>;
+    startBuySession?: (payload: { group_id: number; member_id: number }) => Effect.Effect<any, any, any>;
+  }) => {
     let buyHandler:
       | ((ctx: TelegrafContext) => Promise<unknown> | unknown)
       | undefined;
@@ -80,29 +75,37 @@ describe("registerBuyCommand", () => {
         }
       },
     } as unknown as Telegraf;
-    const defaultStartBuySession: Parameters<
-      typeof registerBuyCommand
-    >[1]["startBuySession"] = () =>
-      Effect.succeed({
-        id: 1,
-        group_id: 10,
-        member_id: 1,
-        flow: "buy",
-        step: "amount",
-        payload_json: "{}",
-        status: "active",
-        expires_at: Date.now() + 1_000,
-        created_at: Date.now(),
-        updated_at: Date.now(),
-      });
-    const fullDependencies: Parameters<typeof registerBuyCommand>[1] = {
-      findGroupById: () => Effect.succeed(undefined),
-      startBuySession: () =>
-        defaultStartBuySession({ group_id: 10, member_id: 1 }),
-      ...dependencies,
-    };
 
-    registerBuyCommand(bot, fullDependencies);
+    const runtime = createMockRuntime({
+      memberService: {
+        findTelegramMember: mocks.findTelegramMember,
+        findActiveByGroupId: mocks.findActiveByGroupId,
+      },
+      groupService: {
+        findById: mocks.findGroupById ?? (() => Effect.succeed(undefined)),
+      },
+      purchaseService: {
+        createWithAllocations: mocks.createPurchaseWithAllocations,
+      },
+      telegramConversationService: {
+        startBuySession: mocks.startBuySession ?? (() =>
+          Effect.succeed({
+            id: 1,
+            group_id: 10,
+            member_id: 1,
+            flow: "buy",
+            step: "amount",
+            payload_json: "{}",
+            status: "active",
+            expires_at: Date.now() + 1_000,
+            created_at: Date.now(),
+            updated_at: Date.now(),
+          })
+        ),
+      },
+    });
+
+    registerBuyCommand(bot, runtime);
 
     expect(buyHandler).toBeDefined();
     return buyHandler;
@@ -165,7 +168,7 @@ describe("registerBuyCommand", () => {
             ...payload.purchase,
             voided_at: null,
           },
-          allocations: payload.allocations.map((allocation, index) => ({
+          allocations: payload.allocations.map((allocation: any, index: number) => ({
             id: index + 1,
             purchase_id: 1,
             ...allocation,
@@ -245,7 +248,7 @@ describe("registerBuyCommand", () => {
             ...payload.purchase,
             voided_at: null,
           },
-          allocations: payload.allocations.map((allocation, index) => ({
+          allocations: payload.allocations.map((allocation: any, index: number) => ({
             id: index + 1,
             purchase_id: 2,
             ...allocation,
@@ -295,7 +298,7 @@ describe("registerBuyCommand", () => {
             ...payload.purchase,
             voided_at: null,
           },
-          allocations: payload.allocations.map((allocation, index) => ({
+          allocations: payload.allocations.map((allocation: any, index: number) => ({
             id: index + 1,
             purchase_id: 6,
             ...allocation,
@@ -344,7 +347,7 @@ describe("registerBuyCommand", () => {
             ...payload.purchase,
             voided_at: null,
           },
-          allocations: payload.allocations.map((allocation, index) => ({
+          allocations: payload.allocations.map((allocation: any, index: number) => ({
             id: index + 1,
             purchase_id: 7,
             ...allocation,
@@ -389,7 +392,7 @@ describe("registerBuyCommand", () => {
             ...payload.purchase,
             voided_at: null,
           },
-          allocations: payload.allocations.map((allocation, index) => ({
+          allocations: payload.allocations.map((allocation: any, index: number) => ({
             id: index + 1,
             purchase_id: 3,
             ...allocation,
@@ -439,7 +442,7 @@ describe("registerBuyCommand", () => {
             ...payload.purchase,
             voided_at: null,
           },
-          allocations: payload.allocations.map((allocation, index) => ({
+          allocations: payload.allocations.map((allocation: any, index: number) => ({
             id: index + 1,
             purchase_id: 4,
             ...allocation,
@@ -487,7 +490,7 @@ describe("registerBuyCommand", () => {
             ...payload.purchase,
             voided_at: null,
           },
-          allocations: payload.allocations.map((allocation, index) => ({
+          allocations: payload.allocations.map((allocation: any, index: number) => ({
             id: index + 1,
             purchase_id: 5,
             ...allocation,

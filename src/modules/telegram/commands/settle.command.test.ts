@@ -4,6 +4,7 @@ import type { Context as TelegrafContext, Telegraf } from "telegraf";
 
 import { MEMBER_STATUS, type MemberModel } from "@/modules/member/member.model";
 import { registerSettleCommand } from "./settle.command";
+import { createMockRuntime } from "../test-utils";
 
 const createMember = (
   id: number,
@@ -22,9 +23,8 @@ const createMember = (
 });
 
 const createSettleContext = (
-  replies: string[],
+  replies: string[] = [],
   replyOptions: unknown[] = [],
-  fromId = 1001,
 ): TelegrafContext =>
   ({
     chat: {
@@ -33,16 +33,16 @@ const createSettleContext = (
       title: "Kit Luy",
     },
     from: {
-      id: fromId,
-      first_name: "Member",
-      username: "member1",
+      id: 1001,
+      first_name: "Payer",
+      username: "payer",
     },
     message: {
-      message_id: 56,
+      message_id: 55,
       text: "/settle",
     },
     update: {
-      update_id: 100,
+      update_id: 99,
     },
     reply: (message: string, options?: unknown) => {
       replies.push(message);
@@ -67,11 +67,21 @@ describe("registerSettleCommand", () => {
     const member = createMember(1, { tg_user_id: "1001" });
     const replies: string[] = [];
 
-    registerSettleCommand(bot, {
-      findTelegramMember: () => Effect.succeed(member),
-      findActiveByGroupId: () => Effect.succeed([member]),
-      findSettlementBalancesByGroupId: () => Effect.succeed([]),
-    });
+    registerSettleCommand(
+      bot,
+      createMockRuntime({
+        memberService: {
+          findTelegramMember: () => Effect.succeed(member),
+          findActiveByGroupId: () => Effect.succeed([member]),
+        },
+        groupService: {
+          findById: () => Effect.succeed(undefined),
+        },
+        purchaseService: {
+          findSettlementBalancesByGroupId: () => Effect.succeed([]),
+        },
+      }),
+    );
 
     expect(settleHandler).toBeDefined();
     await settleHandler?.(createSettleContext(replies));
@@ -99,30 +109,40 @@ describe("registerSettleCommand", () => {
     const replies: string[] = [];
     const replyOptions: unknown[] = [];
 
-    registerSettleCommand(bot, {
-      findTelegramMember: () => Effect.succeed(sender),
-      findActiveByGroupId: () =>
-        Effect.succeed([
-          sender,
-          creditor,
-          debtor,
-          secondCreditor,
-          secondDebtor,
-        ]),
-      findSettlementBalancesByGroupId: () =>
-        Effect.succeed([
-          { member_id: creditor.id, balance: 400 },
-          { member_id: debtor.id, balance: -500 },
-          { member_id: secondCreditor.id, balance: 400 },
-          { member_id: secondDebtor.id, balance: -300 },
-        ]),
-    });
+    registerSettleCommand(
+      bot,
+      createMockRuntime({
+        memberService: {
+          findTelegramMember: () => Effect.succeed(sender),
+          findActiveByGroupId: () =>
+            Effect.succeed([
+              sender,
+              creditor,
+              debtor,
+              secondCreditor,
+              secondDebtor,
+            ]),
+        },
+        groupService: {
+          findById: () => Effect.succeed(undefined),
+        },
+        purchaseService: {
+          findSettlementBalancesByGroupId: () =>
+            Effect.succeed([
+              { member_id: creditor.id, balance: 400 },
+              { member_id: debtor.id, balance: -500 },
+              { member_id: secondCreditor.id, balance: 400 },
+              { member_id: secondDebtor.id, balance: -300 },
+            ]),
+        },
+      }),
+    );
 
     expect(settleHandler).toBeDefined();
     await settleHandler?.(createSettleContext(replies, replyOptions));
 
     expect(replies).toEqual([
-      "Repayments to settle:\n+ <b>Member 3</b>\n   - Member 2\t\t\t\t\t<code>$4.00</code>\n   - Member 4\t\t\t\t\t<code>$1.00</code>\n\n+ <b>Member 5</b>\n   - Member 4\t\t\t\t\t<code>$3.00</code>",
+      "Repayments to settle:\n\n+ <b>Member 2</b>  (Creditor)\n   - Member 3\t\t\t\t\t<code>$4.00</code>\n\n+ <b>Member 4</b>  (Creditor)\n   - Member 3\t\t\t\t\t<code>$1.00</code>\n   - Member 5\t\t\t\t\t<code>$3.00</code>",
     ]);
     expect(replyOptions).toEqual([{ parse_mode: "HTML" }]);
   });

@@ -1,29 +1,24 @@
-import { Context, Effect } from "effect";
+import { Context, Effect, Runtime } from "effect";
 import type { Telegraf } from "telegraf";
 import { runTelegramCommand } from "./command-error";
 import { parseLangCommand } from "../parsers/lang.parser";
 import { IncorrectTelegramCommand } from "../telegram.error";
 import { getLocale } from "../lang/get";
-import type { MemberService } from "@/modules/member/member.service";
-import type { GroupService } from "@/modules/group/group.service";
+import { MemberService } from "@/modules/member/member.service";
+import { GroupService } from "@/modules/group/group.service";
 import { TelegramGroupNotFound } from "@/modules/member/member.error";
 import { isGroupContext } from "../telegram.utils";
 import { getDefaultLocale } from "../lang/group-locale";
-
-export type LangCommandDependencies = Pick<
-  Context.Tag.Service<typeof MemberService>,
-  "findTelegramMember"
-> & {
-  findByGroupId: Context.Tag.Service<typeof GroupService>["findById"];
-  updateGroupLang: Context.Tag.Service<typeof GroupService>["updateLang"];
-};
+import type { TelegramDeps } from "../telegram.types";
 
 export const registerLangCommand = (
   bot: Telegraf,
-  dependencies: LangCommandDependencies,
+  runtime: Runtime.Runtime<TelegramDeps>,
 ) => {
   bot.command("lang", async (ctx) => {
     const commandFlow = Effect.gen(function* () {
+      const memberService = yield* MemberService;
+      const groupService = yield* GroupService;
       const result = parseLangCommand(ctx.message.text);
 
       if (!result.ok) {
@@ -51,11 +46,11 @@ export const registerLangCommand = (
       const { command } = result;
       const tgChatId = String(ctx.chat.id);
       const tgUserId = String(ctx.from.id);
-      const sender = yield* dependencies.findTelegramMember({
+      const sender = yield* memberService.findTelegramMember({
         tg_chat_id: tgChatId,
         tg_user_id: tgUserId,
       });
-      const group = yield* dependencies.findByGroupId(sender.group_id);
+      const group = yield* groupService.findById(sender.group_id);
 
       if (!group) {
         return yield* Effect.fail(
@@ -72,7 +67,7 @@ export const registerLangCommand = (
         );
       }
 
-      const updatedGroup = yield* dependencies.updateGroupLang(
+      const updatedGroup = yield* groupService.updateLang(
         command.language,
         group.id,
       );
@@ -83,6 +78,7 @@ export const registerLangCommand = (
       );
     });
     return runTelegramCommand(
+      runtime,
       ctx,
       {
         command: "/lang",

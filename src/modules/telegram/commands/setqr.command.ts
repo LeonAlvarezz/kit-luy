@@ -1,20 +1,16 @@
-import { Context, Effect } from "effect";
+import { Context, Effect, Runtime } from "effect";
 import type { Telegraf } from "telegraf";
 
-import type { TelegramUserService } from "@/modules/telegram-user/telegram-user.service";
+import { TelegramUserService } from "@/modules/telegram-user/telegram-user.service";
 import { getDefaultLocale } from "../lang/group-locale";
 import { IncorrectTelegramCommand } from "../telegram.error";
 import { isSettlementGroupChat } from "../telegram.utils";
 import { runTelegramCommand } from "./command-error";
+import type { TelegramDeps } from "../telegram.types";
+import { message } from "telegraf/filters";
 
 type TelegramPhoto = {
   readonly file_id: string;
-};
-
-export type SetQrCommandDependencies = {
-  readonly updatePaymentQr: Context.Tag.Service<
-    typeof TelegramUserService
-  >["updatePaymentQr"];
 };
 
 const getPhotos = (message: unknown): readonly TelegramPhoto[] | undefined => {
@@ -38,10 +34,11 @@ const getPhotos = (message: unknown): readonly TelegramPhoto[] | undefined => {
 
 export const registerSetQrCommand = (
   bot: Telegraf,
-  dependencies: SetQrCommandDependencies,
+  runtime: Runtime.Runtime<TelegramDeps>,
 ) => {
   bot.command("setqr", async (ctx) => {
     const commandFlow = Effect.gen(function* () {
+      const telegramUserService = yield* TelegramUserService;
       const t = getDefaultLocale();
 
       if (!ctx.chat || isSettlementGroupChat(ctx.chat)) {
@@ -68,7 +65,7 @@ export const registerSetQrCommand = (
         const fileId = photo[photo.length - 1].file_id;
         const tgUserId = String(ctx.from.id);
 
-        yield* dependencies.updatePaymentQr(tgUserId, fileId);
+        yield* telegramUserService.updatePaymentQr(tgUserId, fileId);
 
         return yield* Effect.promise(() => ctx.reply(t.setqr.success()));
       }
@@ -77,6 +74,7 @@ export const registerSetQrCommand = (
     });
 
     return runTelegramCommand(
+      runtime,
       ctx,
       {
         command: "/setqr",
@@ -86,8 +84,9 @@ export const registerSetQrCommand = (
     );
   });
 
-  bot.on("photo", async (ctx) => {
+  bot.on(message("photo"), async (ctx) => {
     const messageFlow = Effect.gen(function* () {
+      const telegramUserService = yield* TelegramUserService;
       const t = getDefaultLocale();
 
       if (!ctx.chat || isSettlementGroupChat(ctx.chat)) {
@@ -108,13 +107,14 @@ export const registerSetQrCommand = (
         const fileId = photo[photo.length - 1].file_id;
         const tgUserId = String(ctx.from.id);
 
-        yield* dependencies.updatePaymentQr(tgUserId, fileId);
+        yield* telegramUserService.updatePaymentQr(tgUserId, fileId);
 
         return yield* Effect.promise(() => ctx.reply(t.setqr.success()));
       }
     });
 
     return runTelegramCommand(
+      runtime,
       ctx,
       {
         command: "photo upload",
