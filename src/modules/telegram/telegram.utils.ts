@@ -1,8 +1,10 @@
 import type { TelegramChat, TelegramUser } from "./telegram.mapper";
 
+// Returns true when the chat is a standard group or supergroup
 export const isSettlementGroupChat = (chat: TelegramChat) =>
   chat.type === "group" || chat.type === "supergroup";
 
+// Narrows a Telegram handler context to settlement-group messages with a sender.
 export const isGroupContext = (ctx: {
   readonly chat?: TelegramChat;
   readonly from?: TelegramUser;
