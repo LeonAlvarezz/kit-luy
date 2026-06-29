@@ -8,7 +8,7 @@ import type { RepaymentClaimService } from "@/modules/repayment/repayment-claim.
 import type { RepaymentService } from "@/modules/repayment/repayment.service";
 import { IncorrectTelegramCommand } from "../telegram.error";
 import { getDefaultLocale, getGroupLocale } from "../lang/group-locale";
-import { isSettlementGroupChat } from "../telegram.utils";
+import { isGroupContext } from "../telegram.utils";
 import { RepaymentClaimStatus } from "@/modules/repayment/repayment-claim.model";
 
 type RepaymentClaimAction = "accept" | "reject";
@@ -33,7 +33,7 @@ export const registerRepaymentClaimEvents = (
 ) => {
   bot.action(/^repayment_claim:(accept|reject):(\d+)$/, async (ctx) => {
     const commandFlow = Effect.gen(function* () {
-      if (!ctx.chat || !ctx.from || !isSettlementGroupChat(ctx.chat)) {
+      if (!isGroupContext(ctx)) {
         return yield* Effect.fail(
           new IncorrectTelegramCommand({
             command: "repayment_claim",

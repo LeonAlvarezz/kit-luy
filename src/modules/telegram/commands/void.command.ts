@@ -7,7 +7,7 @@ import { PurchaseStatus } from "@/modules/purchase/purchase.model";
 import { PurchaseService } from "@/modules/purchase/purchase.service";
 import { IncorrectTelegramCommand } from "../telegram.error";
 import { getDefaultLocale, getGroupLocale } from "../lang/group-locale";
-import { isSettlementGroupChat } from "../telegram.utils";
+import { isGroupContext } from "../telegram.utils";
 import { runTelegramCommand } from "./command-error";
 
 export type VoidCommandDependencies = Pick<
@@ -36,7 +36,7 @@ export const registerVoidCommand = (
         );
       }
 
-      if (!ctx.chat || !ctx.from || !isSettlementGroupChat(ctx.chat)) {
+      if (!isGroupContext(ctx)) {
         return yield* Effect.fail(
           new IncorrectTelegramCommand({
             command: "/void",

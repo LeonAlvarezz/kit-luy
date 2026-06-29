@@ -8,7 +8,7 @@ import { calculateRepayments } from "@/modules/purchase/purchase.utils";
 import { runTelegramCommand } from "./command-error";
 import { createMemberLookup, formatRepayments } from "./settle.utils";
 import { IncorrectTelegramCommand } from "../telegram.error";
-import { isSettlementGroupChat } from "../telegram.utils";
+import { isGroupContext } from "../telegram.utils";
 import { getDefaultLocale, getGroupLocale } from "../lang/group-locale";
 
 export type SettleCommandDependencies = Pick<
@@ -27,7 +27,7 @@ export const registerSettleCommand = (
 ) => {
   bot.command("settle", async (ctx) => {
     const commandFlow = Effect.gen(function* () {
-      if (!ctx.chat || !ctx.from || !isSettlementGroupChat(ctx.chat)) {
+      if (!isGroupContext(ctx)) {
         return yield* Effect.fail(
           new IncorrectTelegramCommand({
             command: "/settle",

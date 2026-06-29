@@ -10,6 +10,11 @@
 ## [PROGRESS]
 - 2026-06-28T17:03:29+07:00 [CODE] Added Telegram conversation model/repository/service, buy text/callback event handlers, `/cancel`, `/buy` session start, help copy, migration `0005_talented_glorian.sql`, and focused tests.
 - 2026-06-29T10:54:36+07:00 [CODE] Fixed guided `/buy` text middleware to pass through non-session/command messages, registered conversation events before normal commands, removed leaked debug logs, and changed internal error label from `buy_flow` to `/buy`.
+- 2026-06-29T11:32:00+07:00 [CODE] Added debug logs in `buy-conversation.event.ts` to trace the text message handler and database query results.
+- 2026-06-29T11:40:00+07:00 [CODE] Added entrypoint console logs in `telegram.controller.ts` and `telegram.service.ts` to verify webhook delivery.
+- 2026-06-29T11:57:12+07:00 [CODE] Changed guided buy allocation to split only selected members; unselecting sender no longer auto-adds sender to the participant list.
+- 2026-06-29T12:01:16+07:00 [CODE] Extracted common Telegram settlement group sender guard into `hasSettlementGroupChatSender` and reused it across group command/action handlers.
+- 2026-06-29T13:06:40+07:00 [CODE] Renamed `hasSettlementGroupChatSender` to `isGroupContext` for better clarity and conciseness, and updated all occurrences.
 
 ## [DISCOVERIES]
 - 2026-06-28T17:03:29+07:00 [TOOL] `bun test` still has unrelated existing failures in Khmer locale punctuation, list formatting, and settle formatting snapshots; focused buy flow tests pass.

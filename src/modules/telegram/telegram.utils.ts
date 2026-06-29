@@ -1,7 +1,13 @@
-import type { TelegramChat } from "./telegram.mapper";
+import type { TelegramChat, TelegramUser } from "./telegram.mapper";
 
 export const isSettlementGroupChat = (chat: TelegramChat) =>
   chat.type === "group" || chat.type === "supergroup";
+
+export const isGroupContext = (ctx: {
+  readonly chat?: TelegramChat;
+  readonly from?: TelegramUser;
+}): ctx is { readonly chat: TelegramChat; readonly from: TelegramUser } =>
+  !!ctx.chat && !!ctx.from && isSettlementGroupChat(ctx.chat);
 
 export const isChatMigrationMessage = (message?: object) =>
   !!message &&

@@ -5,7 +5,7 @@ import { Effect } from "effect";
 import type { GroupService } from "@/modules/group/group.service";
 import type { MemberService } from "@/modules/member/member.service";
 import { getDefaultLocale, getGroupLocale } from "../lang/group-locale";
-import { isSettlementGroupChat } from "../telegram.utils";
+import { isGroupContext } from "../telegram.utils";
 
 export type HelpCommandDependencies = Pick<
   Context.Tag.Service<typeof MemberService>,
@@ -23,9 +23,7 @@ export const registerHelpCommand = (
   bot.help(async (ctx) => {
     if (
       !dependencies ||
-      !ctx.chat ||
-      !ctx.from ||
-      !isSettlementGroupChat(ctx.chat)
+      !isGroupContext(ctx)
     ) {
       return ctx.reply(getDefaultLocale().help.message());
     }

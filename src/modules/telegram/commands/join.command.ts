@@ -11,7 +11,7 @@ import {
   InvalidTelegramMemberPayload,
   TelegramReplyFailed,
 } from "../telegram.error";
-import { isSettlementGroupChat } from "../telegram.utils";
+import { isGroupContext } from "../telegram.utils";
 import { runTelegramCommand } from "./command-error";
 import { MemberService } from "@/modules/member/member.service";
 import { getDefaultLocale } from "../lang/group-locale";
@@ -29,7 +29,7 @@ export const registerJoinCommand = (
   bot.command("join", async (ctx) => {
     const commandFlow = Effect.gen(function* () {
       const t = getDefaultLocale();
-      if (!ctx.chat || !ctx.from || !isSettlementGroupChat(ctx.chat)) {
+      if (!isGroupContext(ctx)) {
         return yield* Effect.fail(
           new IncorrectTelegramCommand({
             command: "/join",

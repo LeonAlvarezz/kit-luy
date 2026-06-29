@@ -37,6 +37,10 @@ import {
   RepaymentServiceLive,
 } from "../repayment/repayment.service";
 import {
+  TelegramConversationService,
+  TelegramConversationServiceLive,
+} from "../telegram-conversation/telegram-conversation.service";
+import {
   TelegramUserService,
   TelegramUserServiceLive,
 } from "../telegram-user/telegram-user.service";
@@ -63,6 +67,7 @@ export const TelegramServiceLive = Layer.effect(
     const purchaseService = yield* PurchaseService;
     const repaymentClaimService = yield* RepaymentClaimService;
     const repaymentService = yield* RepaymentService;
+    const telegramConversationService = yield* TelegramConversationService;
     const telegramUserService = yield* TelegramUserService;
     const token = env.TELEGRAM_BOT_TOKEN;
 
@@ -106,6 +111,7 @@ export const TelegramServiceLive = Layer.effect(
     });
 
     bot.use(async (ctx, next) => {
+      console.log("[TelegramService] Global middleware received update:", JSON.stringify(ctx.update));
       if (!ctx.from || ctx.from.is_bot || isChatMigrationMessage(ctx.message)) {
         return next();
       }
@@ -119,6 +125,33 @@ export const TelegramServiceLive = Layer.effect(
       return Effect.runPromise(
         upsertTelegramUser(ctx.from).pipe(Effect.asVoid),
       ).then(() => next());
+    });
+
+    registerTelegramEvents(bot, {
+      updateTelegramChatId: groupService.updateTelegramChatId,
+      registerTelegramMember: memberService.registerTelegramMember,
+      deactivateTelegramMember: memberService.deactivateTelegramMember,
+      buyConversationEvents: {
+        findTelegramMember: memberService.findTelegramMember,
+        findActiveByGroupId: memberService.findActiveByGroupId,
+        findGroupById: groupService.findById,
+        createPurchaseWithAllocations: purchaseService.createWithAllocations,
+        findActiveSession: telegramConversationService.findActiveSession,
+        findSessionById: telegramConversationService.findSessionById,
+        updateSession: telegramConversationService.updateSession,
+        completeSession: telegramConversationService.completeSession,
+        cancelSession: telegramConversationService.cancelSession,
+        cancelActiveSession: telegramConversationService.cancelActiveSession,
+      },
+      repaymentClaimEvents: {
+        confirmClaim: repaymentClaimService.confirmClaim,
+        rejectClaim: repaymentClaimService.rejectClaim,
+        findById: repaymentClaimService.findById,
+        findGroupById: groupService.findById,
+        findTelegramMember: memberService.findTelegramMember,
+        createRepaymentFromConfirmedClaim:
+          repaymentService.createFromConfirmedClaim,
+      },
     });
 
     registerTelegramCommands(
@@ -135,6 +168,7 @@ export const TelegramServiceLive = Layer.effect(
         findActiveByGroupId: memberService.findActiveByGroupId,
         findGroupById: groupService.findById,
         createPurchaseWithAllocations: purchaseService.createWithAllocations,
+        startBuySession: telegramConversationService.startBuySession,
       },
       {
         findTelegramMember: memberService.findTelegramMember,
@@ -181,21 +215,6 @@ export const TelegramServiceLive = Layer.effect(
       },
     );
 
-    registerTelegramEvents(bot, {
-      updateTelegramChatId: groupService.updateTelegramChatId,
-      registerTelegramMember: memberService.registerTelegramMember,
-      deactivateTelegramMember: memberService.deactivateTelegramMember,
-      repaymentClaimEvents: {
-        confirmClaim: repaymentClaimService.confirmClaim,
-        rejectClaim: repaymentClaimService.rejectClaim,
-        findById: repaymentClaimService.findById,
-        findGroupById: groupService.findById,
-        findTelegramMember: memberService.findTelegramMember,
-        createRepaymentFromConfirmedClaim:
-          repaymentService.createFromConfirmedClaim,
-      },
-    });
-
     const handleUpdate = (update: any) =>
       Effect.tryPromise({
         try: () => bot.handleUpdate(update),
@@ -224,6 +243,7 @@ export const TelegramServiceLive = Layer.effect(
   Layer.provide(GroupServiceLive),
   Layer.provide(MemberServiceLive),
   Layer.provide(PurchaseServiceLive),
+  Layer.provide(TelegramConversationServiceLive),
   Layer.provide(RepaymentClaimServiceLive),
   Layer.provide(RepaymentServiceLive),
   Layer.provide(TelegramUserServiceLive),

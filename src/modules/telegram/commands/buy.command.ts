@@ -3,6 +3,7 @@ import type { Telegraf } from "telegraf";
 
 import type { MemberService } from "@/modules/member/member.service";
 import type { GroupService } from "@/modules/group/group.service";
+import type { TelegramConversationService } from "@/modules/telegram-conversation/telegram-conversation.service";
 import { AllocationKind } from "@/modules/purchase/purchase-allocation.model";
 import {
   PurchaseAllocationTotalMismatch,
@@ -18,7 +19,7 @@ import { runTelegramCommand } from "./command-error";
 import { parseBuyCommand } from "../parsers/buy.parser";
 import type { BuyAllocation } from "../parsers/buy.parser";
 import { IncorrectTelegramCommand } from "../telegram.error";
-import { isSettlementGroupChat } from "../telegram.utils";
+import { isGroupContext } from "../telegram.utils";
 import { getDefaultLocale, getGroupLocale } from "../lang/group-locale";
 
 export type BuyCommandDependencies = Pick<
@@ -29,6 +30,9 @@ export type BuyCommandDependencies = Pick<
   createPurchaseWithAllocations: Context.Tag.Service<
     typeof PurchaseService
   >["createWithAllocations"];
+  startBuySession: Context.Tag.Service<
+    typeof TelegramConversationService
+  >["startBuySession"];
 };
 
 export const registerBuyCommand = (
@@ -37,10 +41,45 @@ export const registerBuyCommand = (
 ) => {
   bot.command("buy", async (ctx) => {
     const commandFlow = Effect.gen(function* () {
+      if (!isGroupContext(ctx)) {
+        return yield* Effect.fail(
+          new IncorrectTelegramCommand({
+            command: "/buy",
+            message: getDefaultLocale().command.useInGroup({
+              command: "/buy",
+            }),
+          }),
+        );
+      }
+
+      const tgChatId = String(ctx.chat.id);
+      const tgUserId = String(ctx.from.id);
+      const sender = yield* dependencies.findTelegramMember({
+        tg_chat_id: tgChatId,
+        tg_user_id: tgUserId,
+      });
+
+      const t = yield* getGroupLocale(
+        dependencies.findGroupById,
+        sender.group_id,
+      );
+
+      if (ctx.message.text.trim().match(/^\/buy(?:@\w+)?$/i)) {
+        yield* dependencies.startBuySession({
+          group_id: sender.group_id,
+          member_id: sender.id,
+        });
+
+        return yield* Effect.promise(() =>
+          ctx.reply("How much did you pay?", {
+            reply_markup: { force_reply: true, selective: true },
+          }),
+        );
+      }
+
       const result = parseBuyCommand(ctx.message.text);
 
       if (!result.ok) {
-        const t = getDefaultLocale();
         return yield* Effect.fail(
           new IncorrectTelegramCommand({
             command: "/buy",
@@ -52,26 +91,7 @@ export const registerBuyCommand = (
         );
       }
 
-      if (!ctx.chat || !ctx.from || !isSettlementGroupChat(ctx.chat)) {
-        return yield* Effect.fail(
-          new IncorrectTelegramCommand({
-            command: "/buy",
-            message: getDefaultLocale().command.useInGroup({
-              command: "/buy",
-            }),
-          }),
-        );
-      }
-
       const { command } = result;
-
-      const tgChatId = String(ctx.chat.id);
-      const tgUserId = String(ctx.from.id);
-      const sender = yield* dependencies.findTelegramMember({
-        tg_chat_id: tgChatId,
-        tg_user_id: tgUserId,
-      });
-      const t = yield* getGroupLocale(dependencies.findGroupById, sender.group_id);
       const members = yield* dependencies.findActiveByGroupId(sender.group_id);
 
       if (command.type === "all") {

@@ -15,6 +15,10 @@ import {
   registerRepaymentClaimEvents,
   type RepaymentClaimEventDependencies,
 } from "./repayment-claim.event";
+import {
+  registerBuyConversationEvents,
+  type BuyConversationEventDependencies,
+} from "./buy-conversation.event";
 import { getDefaultLocale } from "../lang/group-locale";
 
 export type TelegramEventDependency = Pick<
@@ -26,6 +30,7 @@ export type TelegramEventDependency = Pick<
   >["updateTelegramChatId"];
 } & {
   repaymentClaimEvents: RepaymentClaimEventDependencies;
+  buyConversationEvents: BuyConversationEventDependencies;
 };
 
 export const registerTelegramEvents = (
@@ -37,6 +42,7 @@ export const registerTelegramEvents = (
     registerTelegramMember,
     deactivateTelegramMember,
     repaymentClaimEvents,
+    buyConversationEvents,
   } = dependencies;
 
   bot.on(message("new_chat_members"), async (ctx) => {
@@ -132,5 +138,6 @@ export const registerTelegramEvents = (
     return Effect.runPromise(updateTelegramChatId(oldChatId, newChatId));
   });
 
+  registerBuyConversationEvents(bot, buyConversationEvents);
   registerRepaymentClaimEvents(bot, repaymentClaimEvents);
 };

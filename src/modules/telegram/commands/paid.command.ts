@@ -4,7 +4,7 @@ import { parsePaidCommand } from "../parsers/paid.parser";
 import { runTelegramCommand } from "./command-error";
 import { Context, Effect } from "effect";
 import { IncorrectTelegramCommand } from "../telegram.error";
-import { isSettlementGroupChat } from "../telegram.utils";
+import { isGroupContext } from "../telegram.utils";
 import type { GroupService } from "@/modules/group/group.service";
 import { MemberService } from "@/modules/member/member.service";
 import { PurchaseService } from "@/modules/purchase/purchase.service";
@@ -45,7 +45,7 @@ export const registerPaidCommand = (
         );
       }
 
-      if (!ctx.chat || !ctx.from || !isSettlementGroupChat(ctx.chat)) {
+      if (!isGroupContext(ctx)) {
         return yield* Effect.fail(
           new IncorrectTelegramCommand({
             command: "/paid",

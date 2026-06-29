@@ -54,6 +54,8 @@ export const TelegramControllerLive = HttpApiBuilder.group(
             );
           }
 
+          console.log("[TelegramController] Webhook update received:", JSON.stringify(payload));
+
           const service = yield* TelegramService;
 
           yield* Effect.log("telegram webhook update received").pipe(

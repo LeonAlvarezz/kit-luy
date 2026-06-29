@@ -16,7 +16,7 @@ import { getDefaultLocale, getGroupLocale } from "../lang/group-locale";
 import {
   escapeHtml,
   formatMemberName,
-  isSettlementGroupChat,
+  isGroupContext,
 } from "../telegram.utils";
 
 const PURCHASE_LIST_LIMIT = 10;
@@ -37,7 +37,7 @@ export const registerListCommand = (
 ) => {
   bot.command("list", async (ctx) => {
     const commandFlow = Effect.gen(function* () {
-      if (!ctx.chat || !ctx.from || !isSettlementGroupChat(ctx.chat)) {
+      if (!isGroupContext(ctx)) {
         return yield* Effect.fail(
           new IncorrectTelegramCommand({
             command: "/list",

@@ -7,7 +7,7 @@ import { getLocale } from "../lang/get";
 import type { MemberService } from "@/modules/member/member.service";
 import type { GroupService } from "@/modules/group/group.service";
 import { TelegramGroupNotFound } from "@/modules/member/member.error";
-import { isSettlementGroupChat } from "../telegram.utils";
+import { isGroupContext } from "../telegram.utils";
 import { getDefaultLocale } from "../lang/group-locale";
 
 export type LangCommandDependencies = Pick<
@@ -37,7 +37,7 @@ export const registerLangCommand = (
         );
       }
 
-      if (!ctx.chat || !ctx.from || !isSettlementGroupChat(ctx.chat)) {
+      if (!isGroupContext(ctx)) {
         return yield* Effect.fail(
           new IncorrectTelegramCommand({
             command: "/lang",
