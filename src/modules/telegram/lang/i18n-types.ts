@@ -39,8 +39,10 @@ type RootTranslation = {
 	​
 	​/​s​t​a​r​t​ ​-​ ​S​h​o​w​ ​t​h​e​ ​w​e​l​c​o​m​e​ ​m​e​s​s​a​g​e​.​
 	​/​j​o​i​n​ ​-​ ​R​e​g​i​s​t​e​r​ ​y​o​u​r​s​e​l​f​ ​i​n​ ​t​h​i​s​ ​s​e​t​t​l​e​m​e​n​t​ ​g​r​o​u​p​.​
+	​/​b​u​y​ ​-​ ​R​e​c​o​r​d​ ​a​ ​p​u​r​c​h​a​s​e​ ​s​t​e​p​ ​b​y​ ​s​t​e​p​.​
 	​/​b​u​y​ ​<​a​m​o​u​n​t​>​ ​-​ ​R​e​c​o​r​d​ ​a​ ​p​u​r​c​h​a​s​e​ ​s​p​l​i​t​ ​a​c​r​o​s​s​ ​e​v​e​r​y​o​n​e​.​
 	​/​b​u​y​ ​<​a​m​o​u​n​t​>​ ​@​u​s​e​r​=​a​m​o​u​n​t​|​f​r​a​c​t​i​o​n​ ​.​.​.​ ​-​ ​R​e​c​o​r​d​ ​a​ ​p​u​r​c​h​a​s​e​ ​w​i​t​h​ ​e​x​p​l​i​c​i​t​ ​s​p​l​i​t​s​.​
+	​/​c​a​n​c​e​l​ ​-​ ​C​a​n​c​e​l​ ​y​o​u​r​ ​a​c​t​i​v​e​ ​s​t​e​p​-​b​y​-​s​t​e​p​ ​f​l​o​w​.​
 	​/​p​a​i​d​ ​<​a​m​o​u​n​t​>​ ​-​ ​C​l​a​i​m​ ​t​h​a​t​ ​y​o​u​ ​p​a​i​d​ ​y​o​u​r​ ​n​e​x​t​ ​r​e​p​a​y​m​e​n​t​.​
 	​/​p​a​i​d​ ​@​u​s​e​r​=​<​a​m​o​u​n​t​>​ ​-​ ​C​l​a​i​m​ ​t​h​a​t​ ​y​o​u​ ​p​a​i​d​ ​a​ ​s​p​e​c​i​f​i​c​ ​m​e​m​b​e​r​.​
 	​/​s​e​t​t​l​e​ ​-​ ​S​h​o​w​ ​w​h​o​ ​s​h​o​u​l​d​ ​p​a​y​ ​w​h​o​m​.​
@@ -92,6 +94,14 @@ type RootTranslation = {
 		 * C​o​m​m​a​n​d​ ​f​a​i​l​e​d​.
 		 */
 		failed: string
+		/**
+		 * C​o​n​f​i​r​m
+		 */
+		confirm: string
+		/**
+		 * C​a​n​c​e​l
+		 */
+		cancel: string
 	}
 	join: {
 		/**
@@ -105,7 +115,7 @@ type RootTranslation = {
 	}
 	buy: {
 		/**
-		 * U​s​e​ ​/​b​u​y​ ​4​.​5​ ​o​r​ ​/​b​u​y​ ​4​.​5​ ​@​u​s​e​r​A​=​2​ ​@​u​s​e​r​B​=​1​/​4
+		 * U​s​e​ ​/​b​u​y​ ​t​o​ ​r​e​c​o​r​d​ ​a​ ​p​u​r​c​h​a​s​e​ ​s​t​e​p​ ​b​y​ ​s​t​e​p​.
 		 */
 		usage: string
 		/**
@@ -151,12 +161,92 @@ type RootTranslation = {
 		 * @param {string} member
 		 */
 		beneficiaryLine: RequiredParams<'amount' | 'member'>
+		/**
+		 * P​l​e​a​s​e​ ​s​e​n​d​ ​a​ ​v​a​l​i​d​ ​a​m​o​u​n​t​ ​g​r​e​a​t​e​r​ ​t​h​a​n​ ​0​.
+		 */
+		validAmount: string
+		/**
+		 * H​o​w​ ​m​u​c​h​ ​d​i​d​ ​y​o​u​ ​p​a​y​?
+		 */
+		askAmount: string
+		/**
+		 * W​h​o​ ​s​h​a​r​e​d​ ​t​h​i​s​ ​p​u​r​c​h​a​s​e​?
+		 */
+		askMembers: string
+		/**
+		 * E​v​e​r​y​o​n​e
+		 */
+		memberPickerEveryone: string
+		/**
+		 * D​o​n​e
+		 */
+		memberPickerDone: string
+		/**
+		 * C​a​n​c​e​l
+		 */
+		memberPickerCancel: string
+		/**
+		 * M​y​s​e​l​f​ ​�​�
+		 */
+		memberPickerMyself: string
+		/**
+		 * C​a​n​c​e​l​l​e​d​.
+		 */
+		cancelled: string
+		/**
+		 * E​v​e​r​y​o​n​e​ ​s​e​l​e​c​t​e​d​.
+		 */
+		everyoneSelected: string
+		/**
+		 * S​e​l​e​c​t​ ​a​t​ ​l​e​a​s​t​ ​o​n​e​ ​p​e​r​s​o​n​ ​b​e​s​i​d​e​s​ ​y​o​u​r​s​e​l​f​.
+		 */
+		selectAtLeastOneOther: string
+		/**
+		 * T​h​i​s​ ​b​u​y​ ​f​l​o​w​ ​i​s​ ​i​n​c​o​m​p​l​e​t​e​.
+		 */
+		incompleteFlow: string
+		/**
+		 * P​u​r​c​h​a​s​e​ ​r​e​c​o​r​d​e​d​.
+		 */
+		purchaseRecorded: string
+		/**
+		 * R​e​c​o​r​d​ ​p​u​r​c​h​a​s​e​?
+		 */
+		summaryHeader: string
+		/**
+		 * T​o​t​a​l
+		 */
+		summaryTotal: string
+		/**
+		 * C​o​n​f​i​r​m
+		 */
+		confirm: string
+		/**
+		 * P​a​i​d​ ​b​y
+		 */
+		summaryPaidBy: string
 	}
 	paid: {
 		/**
 		 * U​s​e​ ​/​p​a​i​d​ ​2​ ​o​r​ ​/​p​a​i​d​ ​@​u​s​e​r​A​=​1​0
 		 */
 		usage: string
+		/**
+		 * P​l​e​a​s​e​ ​s​e​n​d​ ​a​ ​v​a​l​i​d​ ​a​m​o​u​n​t​ ​g​r​e​a​t​e​r​ ​t​h​a​n​ ​0​.
+		 */
+		validAmount: string
+		/**
+		 * T​h​e​r​e​ ​a​r​e​ ​n​o​ ​o​t​h​e​r​ ​a​c​t​i​v​e​ ​m​e​m​b​e​r​s​ ​i​n​ ​t​h​i​s​ ​s​e​t​t​l​e​m​e​n​t​ ​g​r​o​u​p​.
+		 */
+		noOtherActiveMembers: string
+		/**
+		 * H​o​w​ ​m​u​c​h​ ​d​i​d​ ​y​o​u​ ​p​a​y​?
+		 */
+		askAmount: string
+		/**
+		 * W​h​o​ ​d​o​ ​y​o​u​ ​w​a​n​t​ ​t​o​ ​p​a​y​ ​t​o​?
+		 */
+		askReceiver: string
 		/**
 		 * Y​o​u​ ​d​o​n​'​t​ ​h​a​v​e​ ​a​n​y​t​h​i​n​g​ ​t​o​ ​s​e​t​t​l​e​.
 		 */
@@ -175,6 +265,38 @@ type RootTranslation = {
 		 * Y​o​u​ ​c​a​n​n​o​t​ ​c​l​a​i​m​ ​m​o​r​e​ ​t​h​a​n​ ​y​o​u​ ​o​w​e​.
 		 */
 		claimTooMuch: string
+		/**
+		 * C​r​e​a​t​e​ ​r​e​p​a​y​m​e​n​t​ ​c​l​a​i​m​?
+		 */
+		summaryHeader: string
+		/**
+		 * A​m​o​u​n​t
+		 */
+		summaryAmount: string
+		/**
+		 * F​r​o​m
+		 */
+		summaryFrom: string
+		/**
+		 * T​o
+		 */
+		summaryTo: string
+		/**
+		 * C​a​n​c​e​l
+		 */
+		cancel: string
+		/**
+		 * C​a​n​c​e​l​l​e​d​.
+		 */
+		cancelled: string
+		/**
+		 * T​h​i​s​ ​p​a​i​d​ ​f​l​o​w​ ​i​s​ ​i​n​c​o​m​p​l​e​t​e​.
+		 */
+		incompleteFlow: string
+		/**
+		 * R​e​p​a​y​m​e​n​t​ ​c​l​a​i​m​ ​c​r​e​a​t​e​d​.
+		 */
+		claimCreatedToast: string
 		/**
 		 * R​e​p​a​y​m​e​n​t​ ​c​l​a​i​m​ ​#​{​c​l​a​i​m​I​d​}​ ​c​r​e​a​t​e​d​ ​f​o​r​ ​$​{​a​m​o​u​n​t​}​.​ ​W​a​i​t​i​n​g​ ​f​o​r​ ​c​o​n​f​i​r​m​a​t​i​o​n​.
 		 * @param {string} amount
@@ -299,12 +421,12 @@ type RootTranslation = {
 		 */
 		status: RequiredParams<'claimId' | 'status'>
 		/**
-		 * R​e​p​a​y​m​e​n​t​ ​s​u​c​c​e​e​d​e​d​ ​✅​ ​#​{​c​l​a​i​m​I​d​}
+		 * #​{​c​l​a​i​m​I​d​}​ ​R​e​p​a​y​m​e​n​t​ ​s​u​c​c​e​e​d​e​d​ ​✅
 		 * @param {number} claimId
 		 */
 		success: RequiredParams<'claimId'>
 		/**
-		 * R​e​p​a​y​m​e​n​t​ ​r​e​j​e​c​t​e​d​ ​�​�​ ​#​{​c​l​a​i​m​I​d​}
+		 * #​{​c​l​a​i​m​I​d​}​ ​R​e​p​a​y​m​e​n​t​ ​r​e​j​e​c​t​e​d​ ​�​�
 		 * @param {number} claimId
 		 */
 		failed: RequiredParams<'claimId'>
@@ -386,8 +508,10 @@ export type TranslationFunctions = {
 
 	/start - Show the welcome message.
 	/join - Register yourself in this settlement group.
+	/buy - Record a purchase step by step.
 	/buy <amount> - Record a purchase split across everyone.
 	/buy <amount> @user=amount|fraction ... - Record a purchase with explicit splits.
+	/cancel - Cancel your active step-by-step flow.
 	/paid <amount> - Claim that you paid your next repayment.
 	/paid @user=<amount> - Claim that you paid a specific member.
 	/settle - Show who should pay whom.
@@ -435,6 +559,14 @@ export type TranslationFunctions = {
 		 * Command failed.
 		 */
 		failed: () => LocalizedString
+		/**
+		 * Confirm
+		 */
+		confirm: () => LocalizedString
+		/**
+		 * Cancel
+		 */
+		cancel: () => LocalizedString
 	}
 	join: {
 		/**
@@ -448,7 +580,7 @@ export type TranslationFunctions = {
 	}
 	buy: {
 		/**
-		 * Use /buy 4.5 or /buy 4.5 @userA=2 @userB=1/4
+		 * Use /buy to record a purchase step by step.
 		 */
 		usage: () => LocalizedString
 		/**
@@ -487,12 +619,92 @@ export type TranslationFunctions = {
 		 *    - {member}					<code>${amount}</code>
 		 */
 		beneficiaryLine: (arg: { amount: string, member: string }) => LocalizedString
+		/**
+		 * Please send a valid amount greater than 0.
+		 */
+		validAmount: () => LocalizedString
+		/**
+		 * How much did you pay?
+		 */
+		askAmount: () => LocalizedString
+		/**
+		 * Who shared this purchase?
+		 */
+		askMembers: () => LocalizedString
+		/**
+		 * Everyone
+		 */
+		memberPickerEveryone: () => LocalizedString
+		/**
+		 * Done
+		 */
+		memberPickerDone: () => LocalizedString
+		/**
+		 * Cancel
+		 */
+		memberPickerCancel: () => LocalizedString
+		/**
+		 * Myself 👤
+		 */
+		memberPickerMyself: () => LocalizedString
+		/**
+		 * Cancelled.
+		 */
+		cancelled: () => LocalizedString
+		/**
+		 * Everyone selected.
+		 */
+		everyoneSelected: () => LocalizedString
+		/**
+		 * Select at least one person besides yourself.
+		 */
+		selectAtLeastOneOther: () => LocalizedString
+		/**
+		 * This buy flow is incomplete.
+		 */
+		incompleteFlow: () => LocalizedString
+		/**
+		 * Purchase recorded.
+		 */
+		purchaseRecorded: () => LocalizedString
+		/**
+		 * Record purchase?
+		 */
+		summaryHeader: () => LocalizedString
+		/**
+		 * Total
+		 */
+		summaryTotal: () => LocalizedString
+		/**
+		 * Confirm
+		 */
+		confirm: () => LocalizedString
+		/**
+		 * Paid by
+		 */
+		summaryPaidBy: () => LocalizedString
 	}
 	paid: {
 		/**
 		 * Use /paid 2 or /paid @userA=10
 		 */
 		usage: () => LocalizedString
+		/**
+		 * Please send a valid amount greater than 0.
+		 */
+		validAmount: () => LocalizedString
+		/**
+		 * There are no other active members in this settlement group.
+		 */
+		noOtherActiveMembers: () => LocalizedString
+		/**
+		 * How much did you pay?
+		 */
+		askAmount: () => LocalizedString
+		/**
+		 * Who do you want to pay to?
+		 */
+		askReceiver: () => LocalizedString
 		/**
 		 * You don't have anything to settle.
 		 */
@@ -509,6 +721,38 @@ export type TranslationFunctions = {
 		 * You cannot claim more than you owe.
 		 */
 		claimTooMuch: () => LocalizedString
+		/**
+		 * Create repayment claim?
+		 */
+		summaryHeader: () => LocalizedString
+		/**
+		 * Amount
+		 */
+		summaryAmount: () => LocalizedString
+		/**
+		 * From
+		 */
+		summaryFrom: () => LocalizedString
+		/**
+		 * To
+		 */
+		summaryTo: () => LocalizedString
+		/**
+		 * Cancel
+		 */
+		cancel: () => LocalizedString
+		/**
+		 * Cancelled.
+		 */
+		cancelled: () => LocalizedString
+		/**
+		 * This paid flow is incomplete.
+		 */
+		incompleteFlow: () => LocalizedString
+		/**
+		 * Repayment claim created.
+		 */
+		claimCreatedToast: () => LocalizedString
 		/**
 		 * Repayment claim #{claimId} created for ${amount}. Waiting for confirmation.
 		 */
@@ -618,11 +862,11 @@ export type TranslationFunctions = {
 		 */
 		status: (arg: { claimId: number, status: string }) => LocalizedString
 		/**
-		 * Repayment succeeded ✅ #{claimId}
+		 * #{claimId} Repayment succeeded ✅
 		 */
 		success: (arg: { claimId: number }) => LocalizedString
 		/**
-		 * Repayment rejected 🚫 #{claimId}
+		 * #{claimId} Repayment rejected 🚫
 		 */
 		failed: (arg: { claimId: number }) => LocalizedString
 		/**

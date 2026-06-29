@@ -11,16 +11,11 @@ export enum TelegramConversationStatus {
   EXPIRED = "expired",
 }
 
-export enum BuyConversationStep {
+export enum ConversationStep {
   AMOUNT = "amount",
   MEMBERS = "members",
   CONFIRM = "confirm",
 }
-
-export type BuyConversationPayload = {
-  readonly amount?: number;
-  readonly selectedMemberIds?: readonly number[];
-};
 
 export namespace TelegramConversationModel {
   export const EntitySchema = Schema.Struct({
@@ -52,17 +47,32 @@ export namespace TelegramConversationModel {
 
   export const UpdateSchema = Schema.partial(
     EntitySchema.pipe(
-      Schema.pick(
-        "step",
-        "payload_json",
-        "status",
-        "expires_at",
-        "updated_at",
-      ),
+      Schema.pick("step", "payload_json", "status", "expires_at", "updated_at"),
     ),
   );
+
+  export const StartSessionSchema = EntitySchema.pipe(
+    Schema.pick("flow", "group_id", "member_id"),
+  );
+
+  export const BuyConversationSchema = Schema.Struct({
+    amount: Schema.optional(Schema.Number),
+    selectedMemberIds: Schema.optional(Schema.Array(Schema.Number)),
+  });
+
+  export const PaidConversationSchema = Schema.Struct({
+    amount: Schema.optional(Schema.Number),
+    receiverMemberId: Schema.optional(Schema.Number),
+  });
 
   export type Entity = Schema.Schema.Type<typeof EntitySchema>;
   export type Create = Schema.Schema.Type<typeof CreateSchema>;
   export type Update = Schema.Schema.Type<typeof UpdateSchema>;
+  export type StartSession = Schema.Schema.Type<typeof StartSessionSchema>;
+  export type BuyConversation = Schema.Schema.Type<
+    typeof BuyConversationSchema
+  >;
+  export type PaidConversation = Schema.Schema.Type<
+    typeof PaidConversationSchema
+  >;
 }

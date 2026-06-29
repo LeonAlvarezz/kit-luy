@@ -12,7 +12,7 @@ import { MemberService } from "@/modules/member/member.service";
 import { GroupService } from "@/modules/group/group.service";
 import { InvalidTelegramMemberPayload } from "../telegram.error";
 import { registerRepaymentClaimEvents } from "./repayment-claim.event";
-import { registerBuyConversationEvents } from "./buy-conversation.event";
+import { registerConversationEvents } from "./conversation.event";
 import { getDefaultLocale } from "../lang/group-locale";
 import type { TelegramDeps } from "../telegram.types";
 
@@ -127,6 +127,6 @@ export const registerTelegramEvents = (
     );
   });
 
-  registerBuyConversationEvents(bot, runtime);
+  registerConversationEvents(bot, runtime);
   registerRepaymentClaimEvents(bot, runtime);
 };

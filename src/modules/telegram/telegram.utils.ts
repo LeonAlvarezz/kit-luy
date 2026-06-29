@@ -1,4 +1,7 @@
+import { Context } from "telegraf";
+import { toCents } from "../purchase/purchase.utils";
 import type { TelegramChat, TelegramUser } from "./telegram.mapper";
+import type { TranslationFunctions } from "./lang/i18n-types";
 
 // Returns true when the chat is a standard group or supergroup
 export const isSettlementGroupChat = (chat: TelegramChat) =>
@@ -26,3 +29,27 @@ export const escapeHtml = (value: string) =>
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;");
+
+export const parseAmount = (ctx: Context) => {
+  const text =
+    ctx.message && "text" in ctx.message ? ctx.message.text : undefined;
+
+  const value = Number(text?.trim());
+  if (!Number.isFinite(value) || value <= 0) {
+    return null;
+  }
+
+  return toCents(value);
+};
+
+export const constructConfirmKeyboard = (
+  sessionId: number,
+  t: TranslationFunctions,
+) => ({
+  inline_keyboard: [
+    [
+      { text: t.command.confirm(), callback_data: `flow:confirm:${sessionId}` },
+      { text: t.command.cancel(), callback_data: `flow:cancel:${sessionId}` },
+    ],
+  ],
+});

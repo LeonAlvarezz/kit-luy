@@ -63,7 +63,11 @@ describe("registerBuyCommand", () => {
     findActiveByGroupId?: (group_id: number) => Effect.Effect<any, any, any>;
     findGroupById?: (id: number) => Effect.Effect<any, any, any>;
     createPurchaseWithAllocations?: (payload: any) => Effect.Effect<any, any, any>;
-    startBuySession?: (payload: { group_id: number; member_id: number }) => Effect.Effect<any, any, any>;
+    startSession?: (payload: {
+      group_id: number;
+      flow: string;
+      member_id: number;
+    }) => Effect.Effect<any, any, any>;
   }) => {
     let buyHandler:
       | ((ctx: TelegrafContext) => Promise<unknown> | unknown)
@@ -88,7 +92,7 @@ describe("registerBuyCommand", () => {
         createWithAllocations: mocks.createPurchaseWithAllocations,
       },
       telegramConversationService: {
-        startBuySession: mocks.startBuySession ?? (() =>
+        startSession: mocks.startSession ?? (() =>
           Effect.succeed({
             id: 1,
             group_id: 10,
@@ -120,9 +124,9 @@ describe("registerBuyCommand", () => {
     const buyHandler = setupBuyCommand({
       findTelegramMember: () => Effect.succeed(payer),
       findActiveByGroupId: () => Effect.succeed([payer]),
-      startBuySession: (payload) => {
+      startSession: (payload) => {
         started = true;
-        expect(payload).toEqual({ group_id: 10, member_id: 1 });
+        expect(payload).toEqual({ group_id: 10, flow: "buy", member_id: 1 });
         return Effect.succeed({
           id: 1,
           group_id: payload.group_id,

@@ -2,9 +2,7 @@ import { DbError } from "@/core/error";
 import { Context, Effect, Layer } from "effect";
 
 import {
-  BuyConversationStep,
-  type BuyConversationPayload,
-  TelegramConversationFlow,
+  ConversationStep,
   TelegramConversationModel,
   TelegramConversationStatus,
 } from "./telegram-conversation.model";
@@ -20,10 +18,9 @@ export class TelegramConversationService extends Context.Tag(
 )<
   TelegramConversationService,
   {
-    startBuySession: (payload: {
-      readonly group_id: number;
-      readonly member_id: number;
-    }) => Effect.Effect<TelegramConversationModel.Entity, DbError>;
+    startSession: (
+      payload: TelegramConversationModel.StartSession,
+    ) => Effect.Effect<TelegramConversationModel.Entity, DbError>;
     findActiveSession: (payload: {
       readonly group_id: number;
       readonly member_id: number;
@@ -31,11 +28,11 @@ export class TelegramConversationService extends Context.Tag(
     findSessionById: (
       id: number,
     ) => Effect.Effect<TelegramConversationModel.Entity | undefined, DbError>;
-    updateSession: (
+    updateSession: <T>(
       id: number,
       payload: {
-        readonly step: BuyConversationStep;
-        readonly payload: BuyConversationPayload;
+        readonly step: ConversationStep;
+        readonly payload: T;
       },
     ) => Effect.Effect<TelegramConversationModel.Entity, DbError>;
     completeSession: (
@@ -60,7 +57,7 @@ export const TelegramConversationServiceLive = Layer.effect(
     const nextExpiry = () => Date.now() + SESSION_TTL_MS;
 
     return {
-      startBuySession: ({ group_id, member_id }) =>
+      startSession: ({ group_id, member_id, flow }) =>
         Effect.gen(function* () {
           yield* expireOldSessions();
           const now = Date.now();
@@ -68,8 +65,8 @@ export const TelegramConversationServiceLive = Layer.effect(
           return yield* repo.create({
             group_id,
             member_id,
-            flow: TelegramConversationFlow.BUY,
-            step: BuyConversationStep.AMOUNT,
+            flow,
+            step: ConversationStep.AMOUNT,
             payload_json: JSON.stringify({}),
             status: TelegramConversationStatus.ACTIVE,
             expires_at: now + SESSION_TTL_MS,

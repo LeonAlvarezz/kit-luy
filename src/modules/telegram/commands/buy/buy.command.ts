@@ -52,19 +52,17 @@ export const registerBuyCommand = (
         tg_user_id: tgUserId,
       });
 
-      const t = yield* getGroupLocale(
-        groupService.findById,
-        sender.group_id,
-      );
+      const t = yield* getGroupLocale(groupService.findById, sender.group_id);
 
       if (ctx.message.text.trim().match(/^\/buy(?:@\w+)?$/i)) {
-        yield* telegramConversationService.startBuySession({
+        yield* telegramConversationService.startSession({
           group_id: sender.group_id,
+          flow: "buy",
           member_id: sender.id,
         });
 
         return yield* Effect.promise(() =>
-          ctx.reply("How much did you pay?", {
+          ctx.reply(t.buy.askAmount(), {
             reply_markup: { force_reply: true, selective: true },
           }),
         );
@@ -222,26 +220,23 @@ export const registerBuyCommand = (
           ({ member }) => member.id !== sender.id,
         );
 
-        const createdPurchase =
-          yield* purchaseService.createWithAllocations({
-            purchase: {
-              group_id: sender.group_id,
-              payer_member_id: sender.id,
-              tg_message_id: ctx.message.message_id,
-              amount: totalAmount,
-              note: null,
-              status: PurchaseStatus.ACTIVE,
-              created_at: Date.now(),
-            },
-            allocations: beneficiaryAllocations.map(
-              ({ member, allocation }) => ({
-                beneficiary_member_id: member.id,
-                responsible_member_id: member.id,
-                amount: allocation.amount,
-                allocation_kind: allocation.allocation_kind,
-              }),
-            ),
-          });
+        const createdPurchase = yield* purchaseService.createWithAllocations({
+          purchase: {
+            group_id: sender.group_id,
+            payer_member_id: sender.id,
+            tg_message_id: ctx.message.message_id,
+            amount: totalAmount,
+            note: null,
+            status: PurchaseStatus.ACTIVE,
+            created_at: Date.now(),
+          },
+          allocations: beneficiaryAllocations.map(({ member, allocation }) => ({
+            beneficiary_member_id: member.id,
+            responsible_member_id: member.id,
+            amount: allocation.amount,
+            allocation_kind: allocation.allocation_kind,
+          })),
+        });
 
         const replyMessage = formatBuyAllReply({
           t,
@@ -315,25 +310,23 @@ export const registerBuyCommand = (
         ({ member }) => member.id !== sender.id,
       );
 
-      const createdPurchase = yield* purchaseService.createWithAllocations(
-        {
-          purchase: {
-            group_id: sender.group_id,
-            payer_member_id: sender.id,
-            tg_message_id: ctx.message.message_id,
-            amount: totalAmount,
-            note: null,
-            status: PurchaseStatus.ACTIVE,
-            created_at: Date.now(),
-          },
-          allocations: beneficiaryAllocations.map(({ member, allocation }) => ({
-            beneficiary_member_id: member.id,
-            responsible_member_id: member.id,
-            amount: allocation.amount,
-            allocation_kind: allocation.allocation_kind,
-          })),
+      const createdPurchase = yield* purchaseService.createWithAllocations({
+        purchase: {
+          group_id: sender.group_id,
+          payer_member_id: sender.id,
+          tg_message_id: ctx.message.message_id,
+          amount: totalAmount,
+          note: null,
+          status: PurchaseStatus.ACTIVE,
+          created_at: Date.now(),
         },
-      );
+        allocations: beneficiaryAllocations.map(({ member, allocation }) => ({
+          beneficiary_member_id: member.id,
+          responsible_member_id: member.id,
+          amount: allocation.amount,
+          allocation_kind: allocation.allocation_kind,
+        })),
+      });
 
       const replyMessage = formatBuyAllReply({
         t,

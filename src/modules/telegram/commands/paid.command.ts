@@ -17,6 +17,7 @@ import { RepaymentClaimStatus } from "@/modules/repayment/repayment-claim.model"
 import { formatAmount } from "@/shared/currency";
 import { getDefaultLocale, getGroupLocale } from "../lang/group-locale";
 import type { TelegramDeps } from "../telegram.types";
+import { TelegramConversationService } from "@/modules/telegram-conversation/telegram-conversation.service";
 
 export const registerPaidCommand = (
   bot: Telegraf,
@@ -28,16 +29,7 @@ export const registerPaidCommand = (
       const groupService = yield* GroupService;
       const purchaseService = yield* PurchaseService;
       const repaymentClaimService = yield* RepaymentClaimService;
-
-      const result = parsePaidCommand(ctx.message.text);
-      if (!result.ok) {
-        return yield* Effect.fail(
-          new IncorrectTelegramCommand({
-            command: "/paid",
-            message: getDefaultLocale().paid.usage(),
-          }),
-        );
-      }
+      const telegramConversationService = yield* TelegramConversationService;
 
       if (!isGroupContext(ctx)) {
         return yield* Effect.fail(
@@ -50,12 +42,11 @@ export const registerPaidCommand = (
         );
       }
 
-      const { command } = result;
-
       const sender = yield* memberService.findTelegramMember({
         tg_chat_id: String(ctx.chat.id),
         tg_user_id: String(ctx.from.id),
       });
+
       const t = yield* getGroupLocale(groupService.findById, sender.group_id);
 
       const balances = yield* purchaseService.findSettlementBalancesByGroupId(
@@ -67,10 +58,34 @@ export const registerPaidCommand = (
       );
 
       if (repayments.length <= 0) {
+        return yield* Effect.promise(() => ctx.reply(t.paid.nothingToSettle()));
+      }
+
+      if (ctx.message.text.trim().match(/^\/paid(?:@\w+)?$/i)) {
+        yield* telegramConversationService.startSession({
+          group_id: sender.group_id,
+          flow: "paid",
+          member_id: sender.id,
+        });
+
         return yield* Effect.promise(() =>
-          ctx.reply(t.paid.nothingToSettle()),
+          ctx.reply(t.paid.askAmount(), {
+            reply_markup: { force_reply: true, selective: true },
+          }),
         );
       }
+
+      const result = parsePaidCommand(ctx.message.text);
+      if (!result.ok) {
+        return yield* Effect.fail(
+          new IncorrectTelegramCommand({
+            command: "/paid",
+            message: getDefaultLocale().paid.usage(),
+          }),
+        );
+      }
+
+      const { command } = result;
 
       const targetRepayment =
         command.type === "first"
