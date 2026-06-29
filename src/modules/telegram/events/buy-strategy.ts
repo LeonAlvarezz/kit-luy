@@ -74,7 +74,9 @@ const formatPickerMemberName = (
   member: MemberModel.Entity,
   t: TranslationFunctions,
 ) =>
-  member.id === sender.id ? t.buy.memberPickerMyself() : formatMemberName(member);
+  member.id === sender.id
+    ? t.buy.memberPickerMyself()
+    : formatMemberName(member);
 
 const buildEqualAllocations = (
   sender: MemberModel.Entity,
@@ -143,9 +145,7 @@ export const buyStrategy: ConversationStrategy = {
       const t = yield* getGroupLocale(groupService.findById, sender.group_id);
 
       if (!amount) {
-        return yield* Effect.promise(() =>
-          ctx.reply(t.buy.validAmount()),
-        );
+        return yield* Effect.promise(() => ctx.reply(t.buy.validAmount()));
       }
 
       const memberService = yield* MemberService;
@@ -163,7 +163,7 @@ export const buyStrategy: ConversationStrategy = {
 
       const payload: TelegramConversationModel.BuyConversation = {
         amount,
-        selectedMemberIds: [],
+        selectedMemberIds: [sender.id],
       };
 
       const updatedSession = yield* telegramConversationService.updateSession(
@@ -203,7 +203,9 @@ export const buyStrategy: ConversationStrategy = {
       if (action === "cancel") {
         yield* telegramConversationService.cancelSession(session.id);
         yield* Effect.promise(() => ctx.answerCbQuery(t.buy.cancelled()));
-        return yield* Effect.promise(() => ctx.editMessageText(t.buy.cancelled()));
+        return yield* Effect.promise(() =>
+          ctx.editMessageText(t.buy.cancelled()),
+        );
       }
 
       if (action === "everyone") {
@@ -215,7 +217,9 @@ export const buyStrategy: ConversationStrategy = {
           step: ConversationStep.MEMBERS,
           payload: nextPayload,
         });
-        yield* Effect.promise(() => ctx.answerCbQuery(t.buy.everyoneSelected()));
+        yield* Effect.promise(() =>
+          ctx.answerCbQuery(t.buy.everyoneSelected()),
+        );
         return yield* Effect.promise(() =>
           ctx.editMessageReplyMarkup(
             memberPickerKeyboard(session.id, sender, members, nextPayload, t),
@@ -309,7 +313,9 @@ export const buyStrategy: ConversationStrategy = {
 
         yield* telegramConversationService.completeSession(session.id);
 
-        yield* Effect.promise(() => ctx.answerCbQuery(t.buy.purchaseRecorded()));
+        yield* Effect.promise(() =>
+          ctx.answerCbQuery(t.buy.purchaseRecorded()),
+        );
         return yield* Effect.promise(() =>
           ctx.editMessageText(
             formatBuyAllReply({
