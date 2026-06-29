@@ -163,7 +163,7 @@ export const buyStrategy: ConversationStrategy = {
 
       const payload: TelegramConversationModel.BuyConversation = {
         amount,
-        selectedMemberIds: [sender.id],
+        selectedMemberIds: [],
       };
 
       const updatedSession = yield* telegramConversationService.updateSession(

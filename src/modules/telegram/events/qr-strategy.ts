@@ -25,7 +25,7 @@ export const qrStrategy: ConversationStrategy = {
           ctx.editMessageText(t.qr.cancelled()),
         );
       }
-
+/*  */
       if (action === "user" && targetMemberId) {
         const members = yield* memberService.findActiveByGroupId(
           sender.group_id,

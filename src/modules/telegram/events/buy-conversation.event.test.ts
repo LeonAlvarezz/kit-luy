@@ -244,14 +244,15 @@ describe("registerConversationEvents", () => {
 
     expect(updatePayload).toEqual({
       step: ConversationStep.MEMBERS,
-      payload: { amount: 1200, selectedMemberIds: [1] },
+      payload: { amount: 1200, selectedMemberIds: [] },
     });
     expect(replies).toEqual(["Who shared this purchase?"]);
     const replyMarkupText = JSON.stringify(replyOptions[0]);
     expect(replyOptions[0]).toMatchObject({
       reply_markup: { inline_keyboard: expect.any(Array) },
     });
-    expect(replyMarkupText).toContain("✓ Myself 👤");
+    expect(replyMarkupText).toContain("Myself 👤");
+    expect(replyMarkupText).not.toContain("✓ Myself 👤");
   });
 
   test("invalid amount stays on amount step", async () => {
@@ -406,5 +407,58 @@ describe("registerConversationEvents", () => {
     expect(createdPayload?.allocations).toMatchObject([
       { beneficiary_member_id: 2, responsible_member_id: 2, amount: 1200 },
     ]);
+  });
+
+  test("toggle then done keeps only the selected non-sender member in a three-member group", async () => {
+    const actions: string[] = [];
+    const payer = createMember(1, { tg_user_id: "1001", alias: "payer" });
+    const memberA = createMember(2, { alias: "memberA" });
+    const memberB = createMember(3, { alias: "memberB" });
+    let payload: TelegramConversationModel.BuyConversation = {
+      amount: 1200,
+      selectedMemberIds: [],
+    };
+
+    const { actionHandler } = setup({
+      findActiveByGroupId: () => Effect.succeed([payer, memberA, memberB]),
+      findSessionById: () =>
+        Effect.succeed(
+          createSession({
+            step: ConversationStep.MEMBERS,
+            payload_json: JSON.stringify(payload),
+          }),
+        ),
+      updateSession: (id, update) => {
+        payload = update.payload;
+        return Effect.succeed(
+          createSession({
+            id,
+            step: update.step,
+            payload_json: JSON.stringify(update.payload),
+          }),
+        );
+      },
+    });
+
+    await actionHandler?.(
+      createActionContext(
+        /^flow:(toggle|everyone|done|confirm|cancel):(\d+)(?::(\d+))?$/.exec(
+          "flow:toggle:7:2",
+        )!,
+        actions,
+      ),
+    );
+    await actionHandler?.(
+      createActionContext(
+        /^flow:(toggle|everyone|done|confirm|cancel):(\d+)(?::(\d+))?$/.exec(
+          "flow:done:7",
+        )!,
+        actions,
+      ),
+    );
+
+    expect(payload).toEqual({ amount: 1200, selectedMemberIds: [2] });
+    expect(actions.at(-1)).toContain("Member 2");
+    expect(actions.at(-1)).not.toContain("Member 3");
   });
 });

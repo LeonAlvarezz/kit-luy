@@ -10,6 +10,8 @@
 - 2026-06-28T17:03:29+07:00 [CODE] V1 guided flow supports equal splits only; selected members represent purchase participants, and sender is auto-included if omitted.
 - 2026-06-29T13:40:00+07:00 [CODE] Use `Effect.runtime` to capture the runtime context in `TelegramServiceLive` and pass it to commands/events registration, allowing them to resolve services directly using `yield*`.
 - 2026-06-29T14:45:00Z [CODE] Define a generic `ConversationStrategy` interface. Flow-specific implementations (e.g. `buyStrategy`) handle text and callback actions, which are dynamically resolved and executed by a central dispatcher middleware based on the session's active flow type.
+- 2026-06-29T18:05:42+07:00 [CODE] Settlement balance math clamps confirmed repayments to outstanding active purchase debt, so repayments cannot create inverse settlement debt after purchases are voided.
+- 2026-06-29T18:04:12+07:00 [CODE] Guided `/buy` member picker starts with no selected members; allocation participants are exactly the members the user selects.
 
 ## [PROGRESS]
 - 2026-06-28T17:03:29+07:00 [CODE] Added Telegram conversation model/repository/service, buy text/callback event handlers, `/cancel`, `/buy` session start, help copy, migration `0005_talented_glorian.sql`, and focused tests.
@@ -26,6 +28,8 @@
 - 2026-06-29T16:59:04+07:00 [CODE] Fixed `/paid` no-repayment guard by moving group locale lookup before the branch that replies with `t.paid.nothingToSettle()`.
 - 2026-06-29T17:08:49+07:00 [CODE] Replaced fixed English copy in guided `/buy` and `/paid` conversation strategies with i18n keys, including prompts, inline keyboard labels, summaries, callback toasts, and incomplete-flow messages. Shared confirm/cancel keyboard labels now use common command i18n keys.
 - 2026-06-29T17:38:48+07:00 [CODE] Refactored QR conversation strategy so text input is a no-op, cancel cancels the active session, and `user` callbacks find the selected member's QR, reply with self/other captions, and complete the session.
+- 2026-06-29T18:05:42+07:00 [CODE] Extracted `calculateSettlementBalances` from `PurchaseService.findSettlementBalancesByGroupId` and added regression coverage for no active purchases plus active repayments.
+- 2026-06-29T18:04:12+07:00 [CODE] Fixed guided `/buy` selection default by changing initial `selectedMemberIds` from `[sender.id]` to `[]` and adding a three-member regression test for selecting only one non-sender.
 
 ## [DISCOVERIES]
 - 2026-06-28T17:03:29+07:00 [TOOL] `bun test` still has unrelated existing failures in Khmer locale punctuation, list formatting, and settle formatting snapshots; focused buy flow tests pass.
@@ -38,6 +42,8 @@
 - 2026-06-29T16:59:04+07:00 [TOOL] `bunx tsc --noEmit` passes after fixing `/paid` locale initialization order.
 - 2026-06-29T17:08:49+07:00 [TOOL] After i18n sweep, `bunx tsc --noEmit` passes and focused tests pass: `bun test src/modules/telegram/events/buy-conversation.event.test.ts src/modules/telegram/commands/buy/buy.command.test.ts src/modules/telegram/lang/get.test.ts` (19 pass, 0 fail).
 - 2026-06-29T17:38:48+07:00 [TOOL] After QR strategy refactor, `bunx tsc --noEmit` passes and focused tests pass: `bun test src/modules/telegram/commands/qr/qr.command.test.ts src/modules/telegram/events/buy-conversation.event.test.ts src/modules/telegram/commands/buy/buy.command.test.ts src/modules/telegram/lang/get.test.ts` (26 pass, 0 fail).
+- 2026-06-29T18:05:42+07:00 [TOOL] Settle regression checks pass: `bun test src/modules/purchase/purchase.service.test.ts src/modules/telegram/commands/settle/settle.command.test.ts` (5 pass, 0 fail). `bunx tsc --noEmit` passes. Full `bun test` still has one unrelated QR failure in `setqr.command.test.ts` expecting `updatedUserId` to be `"456"` but receiving `""`.
+- 2026-06-29T18:04:12+07:00 [TOOL] Guided `/buy` allocation fix verified with `bun test src/modules/telegram/events/buy-conversation.event.test.ts src/modules/telegram/commands/buy/buy.command.test.ts` (18 pass, 0 fail), `bunx tsc --noEmit`, and `git diff --check`.
 
 ## [OUTCOMES]
 - 2026-06-28T17:03:29+07:00 [CODE] `/buy` can now start a persisted group wizard; old advanced `/buy <amount> ...` parser path remains available.
