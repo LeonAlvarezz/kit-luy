@@ -3,7 +3,6 @@ import { Telegraf } from "telegraf";
 import { TelegramDeps } from "../telegram.types";
 import { message } from "telegraf/filters";
 import { MemberService } from "@/modules/member/member.service";
-import { TelegramConversationFlow } from "@/modules/telegram-conversation/telegram-conversation.model";
 import { TelegramConversationService } from "@/modules/telegram-conversation/telegram-conversation.service";
 import { runTelegramCommand } from "../commands/command-error";
 import { isGroupContext } from "../telegram.utils";
@@ -11,8 +10,9 @@ import { IncorrectTelegramCommand } from "../telegram.error";
 import { getDefaultLocale } from "../lang/group-locale";
 import { buyStrategy, parseSessionIfBelongToUser } from "./buy-strategy";
 import { paidStrategy } from "./paid-strategy";
+import { qrStrategy } from "./qr-strategy";
 
-const strategies = [buyStrategy, paidStrategy];
+const strategies = [buyStrategy, paidStrategy, qrStrategy];
 const getStrategy = (flow: string) => strategies.find((s) => s.flow === flow);
 
 export const registerConversationEvents = (
@@ -113,8 +113,6 @@ export const registerConversationEvents = (
           );
           return;
         }
-
-        console.log("session.flow", session.flow);
 
         const strategy = getStrategy(session.flow);
         if (!strategy) {

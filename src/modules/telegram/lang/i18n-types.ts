@@ -218,10 +218,6 @@ type RootTranslation = {
 		 */
 		summaryTotal: string
 		/**
-		 * C​o​n​f​i​r​m
-		 */
-		confirm: string
-		/**
 		 * P​a​i​d​ ​b​y
 		 */
 		summaryPaidBy: string
@@ -285,6 +281,10 @@ type RootTranslation = {
 		 * C​a​n​c​e​l
 		 */
 		cancel: string
+		/**
+		 * C​o​n​f​i​r​m
+		 */
+		confirm: string
 		/**
 		 * C​a​n​c​e​l​l​e​d​.
 		 */
@@ -459,6 +459,14 @@ type RootTranslation = {
 		 */
 		usage: string
 		/**
+		 * S​e​l​e​c​t​ ​a​ ​u​s​e​r​ ​t​o​ ​v​i​e​w​ ​t​h​e​i​r​ ​Q​R​ ​c​o​d​e​:
+		 */
+		selectMember: string
+		/**
+		 * M​y​s​e​l​f​ ​�​�
+		 */
+		memberPickerMyself: string
+		/**
 		 * Y​o​u​ ​h​a​v​e​n​'​t​ ​s​e​t​ ​y​o​u​r​ ​p​a​y​m​e​n​t​ ​Q​R​ ​y​e​t​.​ ​P​l​e​a​s​e​ ​D​M​ ​m​e​ ​a​n​d​ ​s​e​n​d​ ​y​o​u​r​ ​Q​R​ ​p​h​o​t​o​ ​t​o​ ​s​e​t​ ​i​t​.
 		 */
 		notSetSelf: string
@@ -476,6 +484,10 @@ type RootTranslation = {
 		 * @param {string} name
 		 */
 		captionOther: RequiredParams<'name'>
+		/**
+		 * C​a​n​c​e​l​l​e​d​.
+		 */
+		cancelled: string
 		/**
 		 * C​o​u​l​d​ ​n​o​t​ ​r​e​t​r​i​e​v​e​ ​Q​R​ ​c​o​d​e​.
 		 */
@@ -676,10 +688,6 @@ export type TranslationFunctions = {
 		 */
 		summaryTotal: () => LocalizedString
 		/**
-		 * Confirm
-		 */
-		confirm: () => LocalizedString
-		/**
 		 * Paid by
 		 */
 		summaryPaidBy: () => LocalizedString
@@ -741,6 +749,10 @@ export type TranslationFunctions = {
 		 * Cancel
 		 */
 		cancel: () => LocalizedString
+		/**
+		 * Confirm
+		 */
+		confirm: () => LocalizedString
 		/**
 		 * Cancelled.
 		 */
@@ -898,6 +910,14 @@ export type TranslationFunctions = {
 		 */
 		usage: () => LocalizedString
 		/**
+		 * Select a user to view their QR code:
+		 */
+		selectMember: () => LocalizedString
+		/**
+		 * Myself 👤
+		 */
+		memberPickerMyself: () => LocalizedString
+		/**
 		 * You haven't set your payment QR yet. Please DM me and send your QR photo to set it.
 		 */
 		notSetSelf: () => LocalizedString
@@ -913,6 +933,10 @@ export type TranslationFunctions = {
 		 * Payment QR code for <b>{name}</b>.
 		 */
 		captionOther: (arg: { name: string }) => LocalizedString
+		/**
+		 * Cancelled.
+		 */
+		cancelled: () => LocalizedString
 		/**
 		 * Could not retrieve QR code.
 		 */

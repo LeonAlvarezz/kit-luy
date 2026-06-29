@@ -137,12 +137,15 @@ const en = {
   },
   qr: {
     usage: "Use /qr to show your QR, or /qr @user to show a member's QR.",
+    selectMember: "Select a user to view their QR code:",
+    memberPickerMyself: "Myself 👤",
     notSetSelf:
       "You haven't set your payment QR yet. Please DM me and send your QR photo to set it.",
     notSetOther:
       "<b>{name:string}</b> hasn't set their payment QR yet. Ask them to DM me and send their QR photo.",
     captionSelf: "Your payment QR code.",
     captionOther: "Payment QR code for <b>{name:string}</b>.",
+    cancelled: "Cancelled.",
     fallback: "Could not retrieve QR code.",
   },
 } satisfies BaseTranslation;

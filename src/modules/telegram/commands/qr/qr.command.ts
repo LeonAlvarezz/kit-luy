@@ -9,8 +9,43 @@ import { formatMemberName, isSettlementGroupChat } from "../../telegram.utils";
 import { runTelegramCommand } from "../command-error";
 import { getDefaultLocale, getGroupLocale } from "../../lang/group-locale";
 import type { TelegramDeps } from "../../telegram.types";
+import { MemberModel } from "@/modules/member/member.model";
+import type { TranslationFunctions } from "../../lang/i18n-types";
+import { TelegramConversationService } from "@/modules/telegram-conversation/telegram-conversation.service";
 
 const qrCommandRegex = /^\/qr(?:@\w+)?(?:\s+(.+))?$/i;
+const formatPickerMemberName = (
+  sender: MemberModel.Entity,
+  member: MemberModel.Entity,
+  t: TranslationFunctions,
+) =>
+  member.id === sender.id
+    ? t.qr.memberPickerMyself()
+    : formatMemberName(member);
+
+const constructQRKeyboard = (
+  sessionId: number,
+  sender: MemberModel.Entity,
+  members: readonly MemberModel.Entity[],
+  t: TranslationFunctions,
+) => {
+  return {
+    inline_keyboard: [
+      ...members.map((member) => [
+        {
+          text: formatPickerMemberName(sender, member, t),
+          callback_data: `flow:user:${sessionId}:${member.id}`,
+        },
+      ]),
+      [
+        {
+          text: t.command.cancel(),
+          callback_data: `flow:cancel:${sessionId}`,
+        },
+      ],
+    ],
+  };
+};
 
 export const registerQrCommand = (
   bot: Telegraf,
@@ -21,6 +56,7 @@ export const registerQrCommand = (
       const memberService = yield* MemberService;
       const groupService = yield* GroupService;
       const telegramUserService = yield* TelegramUserService;
+      const telegramConversationService = yield* TelegramConversationService;
 
       const defaultT = getDefaultLocale();
 
@@ -34,6 +70,7 @@ export const registerQrCommand = (
       }
 
       const match = ctx.message.text.match(qrCommandRegex);
+
       if (!match) {
         return yield* Effect.fail(
           new IncorrectTelegramCommand({
@@ -57,51 +94,46 @@ export const registerQrCommand = (
           tg_chat_id: tgChatId,
           tg_user_id: tgUserId,
         });
-        const t = yield* getGroupLocale(
-          groupService.findById,
-          sender.group_id,
-        );
+        const t = yield* getGroupLocale(groupService.findById, sender.group_id);
 
-        // Subflow: Get another user's QR
-        if (targetUsername) {
+        // Get sender's own QR in group chat
+        if (!targetUsername) {
+          const session = yield* telegramConversationService.startSession({
+            group_id: sender.group_id,
+            flow: "qr",
+            member_id: sender.id,
+          });
           const members = yield* memberService.findActiveByGroupId(
             sender.group_id,
           );
-          const targetMember = members.find(
-            (m) => m.alias?.toLowerCase() === targetUsername.toLowerCase(),
+
+          return yield* Effect.promise(() =>
+            ctx.reply(t.qr.selectMember(), {
+              parse_mode: "HTML",
+              reply_markup: constructQRKeyboard(session.id, sender, members, t),
+            }),
           );
+        }
 
-          if (!targetMember) {
-            return yield* Effect.promise(() =>
-              ctx.reply(
-                t.buy.beneficiaryNotFound({ username: targetUsername }),
-                { parse_mode: "HTML" },
-              ),
-            );
-          }
+        // Get mentioned user's QR
+        const members = yield* memberService.findActiveByGroupId(
+          sender.group_id,
+        );
 
-          const targetTgUserId = targetMember.tg_user_id;
-          if (!targetTgUserId) {
-            const displayName = formatMemberName(targetMember);
-            return yield* Effect.promise(() =>
-              ctx.reply(t.qr.notSetOther({ name: displayName }), {
-                parse_mode: "HTML",
-              }),
-            );
-          }
+        const targetMember = members.find(
+          (m) => m.alias?.toLowerCase() === targetUsername.toLowerCase(),
+        );
 
-          const tgUser = yield* telegramUserService.findByTgUserId(targetTgUserId);
-          const paymentQrFileId = tgUser?.payment_qr_file_id;
-          if (paymentQrFileId) {
-            const displayName = formatMemberName(targetMember);
-            return yield* Effect.promise(() =>
-              ctx.replyWithPhoto(paymentQrFileId, {
-                caption: t.qr.captionOther({ name: displayName }),
-                parse_mode: "HTML",
-              }),
-            );
-          }
+        if (!targetMember) {
+          return yield* Effect.promise(() =>
+            ctx.reply(t.buy.beneficiaryNotFound({ username: targetUsername }), {
+              parse_mode: "HTML",
+            }),
+          );
+        }
 
+        const targetTgUserId = targetMember.tg_user_id;
+        if (!targetTgUserId) {
           const displayName = formatMemberName(targetMember);
           return yield* Effect.promise(() =>
             ctx.reply(t.qr.notSetOther({ name: displayName }), {
@@ -110,20 +142,24 @@ export const registerQrCommand = (
           );
         }
 
-        // Subflow: Get sender's own QR in group chat
-        const tgUser = yield* telegramUserService.findByTgUserId(tgUserId);
+        const tgUser =
+          yield* telegramUserService.findByTgUserId(targetTgUserId);
         const paymentQrFileId = tgUser?.payment_qr_file_id;
         if (paymentQrFileId) {
+          const displayName = formatMemberName(targetMember);
           return yield* Effect.promise(() =>
             ctx.replyWithPhoto(paymentQrFileId, {
-              caption: t.qr.captionSelf(),
+              caption: t.qr.captionOther({ name: displayName }),
               parse_mode: "HTML",
             }),
           );
         }
 
+        const displayName = formatMemberName(targetMember);
         return yield* Effect.promise(() =>
-          ctx.reply(t.qr.notSetSelf(), { parse_mode: "HTML" }),
+          ctx.reply(t.qr.notSetOther({ name: displayName }), {
+            parse_mode: "HTML",
+          }),
         );
       }
 
@@ -132,7 +168,8 @@ export const registerQrCommand = (
 
       // Subflow: Get another user's QR globally by username in private chat
       if (targetUsername) {
-        const tgUser = yield* telegramUserService.findByUsername(targetUsername);
+        const tgUser =
+          yield* telegramUserService.findByUsername(targetUsername);
         const paymentQrFileId = tgUser?.payment_qr_file_id;
         if (paymentQrFileId) {
           const displayName = tgUser.display_name ?? `@${tgUser.username}`;

@@ -6,7 +6,7 @@ import { Message } from "telegraf/types";
 import { TelegramDeps } from "../telegram.types";
 
 export interface ConversationStrategy {
-  readonly flow: "buy" | "paid";
+  readonly flow: "buy" | "paid" | "qr";
   onText(
     ctx: Context,
     sender: MemberModel.Entity,

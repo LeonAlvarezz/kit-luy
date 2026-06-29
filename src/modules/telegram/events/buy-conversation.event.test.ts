@@ -311,9 +311,7 @@ describe("registerConversationEvents", () => {
       ),
     );
 
-    expect(actions).toEqual([
-      "answer:This buy flow is not yours or has expired.",
-    ]);
+    expect(actions).toEqual(["answer:This flow is not yours or has expired."]);
   });
 
   test("confirm creates equal split purchase and completes session", async () => {

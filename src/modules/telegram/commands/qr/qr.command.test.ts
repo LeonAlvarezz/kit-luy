@@ -16,12 +16,30 @@ describe("qr command", () => {
     findGroupById = () => Effect.succeed({ language: "en" } as any),
     findByTgUserId = (_tgUserId: string) => Effect.succeed(undefined as any),
     findByUsername = (_username: string) => Effect.succeed(undefined as any),
+    startSession = () =>
+      Effect.succeed({
+        id: 7,
+        group_id: 1,
+        member_id: 1,
+        flow: "qr",
+        step: "members",
+        payload_json: "{}",
+        status: "active",
+        expires_at: Date.now() + 1_000,
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      } as any),
   }: {
     findTelegramMember?: (payload: { tg_chat_id: string; tg_user_id: string }) => Effect.Effect<any, any, any>;
     findActiveByGroupId?: (group_id: number) => Effect.Effect<any, any, any>;
     findGroupById?: (id: number) => Effect.Effect<any, any, any>;
     findByTgUserId?: (tgUserId: string) => Effect.Effect<any, any, any>;
     findByUsername?: (username: string) => Effect.Effect<any, any, any>;
+    startSession?: (payload: {
+      group_id: number;
+      flow: string;
+      member_id: number;
+    }) => Effect.Effect<any, any, any>;
   } = {}) => {
     let commandHandler:
       | ((ctx: TelegrafContext) => Promise<unknown> | unknown)
@@ -46,6 +64,9 @@ describe("qr command", () => {
         findByTgUserId,
         findByUsername,
       },
+      telegramConversationService: {
+        startSession,
+      },
     });
 
     registerQrCommand(bot, runtime);
@@ -53,21 +74,23 @@ describe("qr command", () => {
     return { commandHandler };
   };
 
-  test("gets own QR code in group chat when QR is set", async () => {
+  test("starts member picker in group chat when no QR target is provided", async () => {
     const mockUser = { payment_qr_file_id: "my_qr_id" };
     const { commandHandler } = setupTest({
       findByTgUserId: () => Effect.succeed(mockUser as any),
     });
 
     const replies: string[] = [];
+    const replyOptions: unknown[] = [];
     const photoReplies: { photo: string; caption: string }[] = [];
 
     const ctx = {
       chat: { id: 123, type: "group" },
       from: { id: 456 },
       message: { text: "/qr" },
-      reply: (msg: string) => {
+      reply: (msg: string, options?: unknown) => {
         replies.push(msg);
+        replyOptions.push(options);
         return Promise.resolve();
       },
       replyWithPhoto: (photo: string, extra: any) => {
@@ -79,13 +102,14 @@ describe("qr command", () => {
 
     await commandHandler?.(ctx);
 
-    expect(replies).toEqual([]);
-    expect(photoReplies).toEqual([
-      { photo: "my_qr_id", caption: t.qr.captionSelf() },
-    ]);
+    expect(replies).toEqual([t.qr.selectMember()]);
+    expect(replyOptions[0]).toMatchObject({
+      reply_markup: { inline_keyboard: expect.any(Array) },
+    });
+    expect(photoReplies).toEqual([]);
   });
 
-  test("returns message when own QR is not set in group chat", async () => {
+  test("starts member picker in group chat even when own QR is not set", async () => {
     const { commandHandler } = setupTest({
       findByTgUserId: () => Effect.succeed(undefined as any),
     });
@@ -104,7 +128,7 @@ describe("qr command", () => {
 
     await commandHandler?.(ctx);
 
-    expect(replies).toEqual([t.qr.notSetSelf()]);
+    expect(replies).toEqual([t.qr.selectMember()]);
   });
 
   test("gets other group member QR code by alias in group chat when set", async () => {

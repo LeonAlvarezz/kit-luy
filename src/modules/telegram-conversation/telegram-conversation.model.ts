@@ -2,6 +2,8 @@ import { Schema } from "effect";
 
 export enum TelegramConversationFlow {
   BUY = "buy",
+  PAID = "paid",
+  QR = "qr",
 }
 
 export enum TelegramConversationStatus {
