@@ -36,6 +36,13 @@
       "when": 1781261384256,
       "tag": "0004_good_hercules",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1782640973108,
+      "tag": "0005_talented_glorian",
+      "breakpoints": true
     }
   ]
 }

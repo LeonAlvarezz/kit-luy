@@ -10,7 +10,7 @@ const en = {
   },
   help: {
     message:
-      "Kit Luy commands:\n\n/start - Show the welcome message.\n/join - Register yourself in this settlement group.\n/buy <amount> - Record a purchase split across everyone.\n/buy <amount> @user=amount|fraction ... - Record a purchase with explicit splits.\n/paid <amount> - Claim that you paid your next repayment.\n/paid @user=<amount> - Claim that you paid a specific member.\n/settle - Show who should pay whom.\n/list - Show recent active purchases.\n/void <purchase-id> - Void a purchase.\n/setqr - Set your payment QR code (DM only).\n/qr - Show your payment QR code.\n/qr @user - Show a member's payment QR code.\n/help - Show this command list.",
+      "Kit Luy commands:\n\n/start - Show the welcome message.\n/join - Register yourself in this settlement group.\n/buy - Record a purchase step by step.\n/buy <amount> - Record a purchase split across everyone.\n/buy <amount> @user=amount|fraction ... - Record a purchase with explicit splits.\n/cancel - Cancel your active step-by-step flow.\n/paid <amount> - Claim that you paid your next repayment.\n/paid @user=<amount> - Claim that you paid a specific member.\n/settle - Show who should pay whom.\n/list - Show recent active purchases.\n/void <purchase-id> - Void a purchase.\n/setqr - Set your payment QR code (DM only).\n/qr - Show your payment QR code.\n/qr @user - Show a member's payment QR code.\n/help - Show this command list.",
   },
   lang: {
     current: "Current language: {language:string}.",
@@ -29,7 +29,7 @@ const en = {
     fallback: "Could not register you in this settlement group.",
   },
   buy: {
-    usage: "Use /buy 4.5 or /buy 4.5 @userA=2 @userB=1/4",
+    usage: "Use /buy to record a purchase step by step.",
     allocationUsage:
       "Use allocations like @userA=2 @userB=1/4 after the amount.",
     noOtherActiveMembers:

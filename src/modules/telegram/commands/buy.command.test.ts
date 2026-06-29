@@ -58,9 +58,14 @@ const createBuyContext = (
 describe("registerBuyCommand", () => {
   type BuyCommandTestDependencies = Omit<
     Parameters<typeof registerBuyCommand>[1],
-    "findGroupById"
+    "findGroupById" | "startBuySession"
   > &
-    Partial<Pick<Parameters<typeof registerBuyCommand>[1], "findGroupById">>;
+    Partial<
+      Pick<
+        Parameters<typeof registerBuyCommand>[1],
+        "findGroupById" | "startBuySession"
+      >
+    >;
 
   const setupBuyCommand = (
     dependencies: BuyCommandTestDependencies,
@@ -75,8 +80,25 @@ describe("registerBuyCommand", () => {
         }
       },
     } as unknown as Telegraf;
+    const defaultStartBuySession: Parameters<
+      typeof registerBuyCommand
+    >[1]["startBuySession"] = () =>
+      Effect.succeed({
+        id: 1,
+        group_id: 10,
+        member_id: 1,
+        flow: "buy",
+        step: "amount",
+        payload_json: "{}",
+        status: "active",
+        expires_at: Date.now() + 1_000,
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      });
     const fullDependencies: Parameters<typeof registerBuyCommand>[1] = {
       findGroupById: () => Effect.succeed(undefined),
+      startBuySession: () =>
+        defaultStartBuySession({ group_id: 10, member_id: 1 }),
       ...dependencies,
     };
 
@@ -85,6 +107,45 @@ describe("registerBuyCommand", () => {
     expect(buyHandler).toBeDefined();
     return buyHandler;
   };
+
+  test("starts guided flow for bare /buy", async () => {
+    const payer = createMember(1, { tg_user_id: "1001", alias: "payer" });
+    const replies: string[] = [];
+    const replyOptions: unknown[] = [];
+    let started = false;
+
+    const buyHandler = setupBuyCommand({
+      findTelegramMember: () => Effect.succeed(payer),
+      findActiveByGroupId: () => Effect.succeed([payer]),
+      startBuySession: (payload) => {
+        started = true;
+        expect(payload).toEqual({ group_id: 10, member_id: 1 });
+        return Effect.succeed({
+          id: 1,
+          group_id: payload.group_id,
+          member_id: payload.member_id,
+          flow: "buy",
+          step: "amount",
+          payload_json: "{}",
+          status: "active",
+          expires_at: Date.now() + 1_000,
+          created_at: Date.now(),
+          updated_at: Date.now(),
+        });
+      },
+      createPurchaseWithAllocations: () => {
+        throw new Error("should not create purchase");
+      },
+    });
+
+    await buyHandler?.(createBuyContext("/buy", 1001, replies, replyOptions));
+
+    expect(started).toBe(true);
+    expect(replies).toEqual(["How much did you pay?"]);
+    expect(replyOptions[0]).toMatchObject({
+      reply_markup: { force_reply: true, selective: true },
+    });
+  });
 
   test("splits /buy all across active members but only charges non-payers", async () => {
     const payer = createMember(1, { tg_user_id: "1001", alias: "payer" });
