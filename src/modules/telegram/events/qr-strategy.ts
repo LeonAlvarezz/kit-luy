@@ -20,9 +20,9 @@ export const qrStrategy: ConversationStrategy = {
 
       if (action === "cancel") {
         yield* telegramConversationService.cancelSession(session.id);
-        yield* Effect.promise(() => ctx.answerCbQuery(t.paid.cancelled()));
+        yield* Effect.promise(() => ctx.answerCbQuery(t.qr.cancelled()));
         return yield* Effect.promise(() =>
-          ctx.editMessageText(t.paid.cancelled()),
+          ctx.editMessageText(t.qr.cancelled()),
         );
       }
 

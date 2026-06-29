@@ -25,6 +25,7 @@
 - 2026-06-29T16:54:35+07:00 [CODE] Fixed `paidStrategy` confirm action to read `receiverMemberId` from persisted payload, use stored cent amount directly, create the repayment claim from callback context, complete the conversation session, and edit the confirmation message into claim-created state.
 - 2026-06-29T16:59:04+07:00 [CODE] Fixed `/paid` no-repayment guard by moving group locale lookup before the branch that replies with `t.paid.nothingToSettle()`.
 - 2026-06-29T17:08:49+07:00 [CODE] Replaced fixed English copy in guided `/buy` and `/paid` conversation strategies with i18n keys, including prompts, inline keyboard labels, summaries, callback toasts, and incomplete-flow messages. Shared confirm/cancel keyboard labels now use common command i18n keys.
+- 2026-06-29T17:38:48+07:00 [CODE] Refactored QR conversation strategy so text input is a no-op, cancel cancels the active session, and `user` callbacks find the selected member's QR, reply with self/other captions, and complete the session.
 
 ## [DISCOVERIES]
 - 2026-06-28T17:03:29+07:00 [TOOL] `bun test` still has unrelated existing failures in Khmer locale punctuation, list formatting, and settle formatting snapshots; focused buy flow tests pass.
@@ -36,6 +37,7 @@
 - 2026-06-29T16:54:35+07:00 [TOOL] `bunx tsc --noEmit` passes after fixing `paidStrategy` confirm handling.
 - 2026-06-29T16:59:04+07:00 [TOOL] `bunx tsc --noEmit` passes after fixing `/paid` locale initialization order.
 - 2026-06-29T17:08:49+07:00 [TOOL] After i18n sweep, `bunx tsc --noEmit` passes and focused tests pass: `bun test src/modules/telegram/events/buy-conversation.event.test.ts src/modules/telegram/commands/buy/buy.command.test.ts src/modules/telegram/lang/get.test.ts` (19 pass, 0 fail).
+- 2026-06-29T17:38:48+07:00 [TOOL] After QR strategy refactor, `bunx tsc --noEmit` passes and focused tests pass: `bun test src/modules/telegram/commands/qr/qr.command.test.ts src/modules/telegram/events/buy-conversation.event.test.ts src/modules/telegram/commands/buy/buy.command.test.ts src/modules/telegram/lang/get.test.ts` (26 pass, 0 fail).
 
 ## [OUTCOMES]
 - 2026-06-28T17:03:29+07:00 [CODE] `/buy` can now start a persisted group wizard; old advanced `/buy <amount> ...` parser path remains available.
