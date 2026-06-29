@@ -66,6 +66,7 @@ export const TelegramServiceLive = Layer.effect(
     const env = yield* WorkerEnv;
     const memberService = yield* MemberService;
     const telegramUserService = yield* TelegramUserService;
+    const runtime = yield* Effect.runtime<TelegramDeps>();
     const token = env.TELEGRAM_BOT_TOKEN;
 
     if (!token) {
@@ -122,8 +123,6 @@ export const TelegramServiceLive = Layer.effect(
         upsertTelegramUser(ctx.from).pipe(Effect.asVoid),
       ).then(() => next());
     });
-
-    const runtime = yield* Effect.runtime<TelegramDeps>();
 
     registerTelegramEvents(bot, runtime);
 

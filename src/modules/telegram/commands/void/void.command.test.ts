@@ -69,7 +69,7 @@ const createVoidContext = (
     },
   }) as unknown as TelegrafContext;
 
-import { createMockRuntime } from "../test-utils";
+import { createMockRuntime } from "../../test-utils";
 
 const setupVoidCommand = (mocks: {
   findTelegramMember?: (payload: { tg_chat_id: string; tg_user_id: string }) => Effect.Effect<any, any, any>;

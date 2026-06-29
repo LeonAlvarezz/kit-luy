@@ -1,8 +1,8 @@
 import type { MemberModel } from "@/modules/member/member.model";
 import type { PurchaseAllocationModel } from "@/modules/purchase/purchase-allocation.model";
 import { formatAmount } from "@/shared/currency";
-import type { TranslationFunctions } from "../lang/i18n-types";
-import { escapeHtml, formatMemberName } from "../telegram.utils";
+import type { TranslationFunctions } from "../../lang/i18n-types";
+import { escapeHtml, formatMemberName } from "../../telegram.utils";
 
 export type BeneficiaryAllocation = {
   readonly member: MemberModel.Entity;

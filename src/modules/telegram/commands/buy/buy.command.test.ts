@@ -55,7 +55,7 @@ const createBuyContext = (
     },
   }) as unknown as TelegrafContext;
 
-import { createMockRuntime } from "../test-utils";
+import { createMockRuntime } from "../../test-utils";
 
 describe("registerBuyCommand", () => {
   const setupBuyCommand = (mocks: {

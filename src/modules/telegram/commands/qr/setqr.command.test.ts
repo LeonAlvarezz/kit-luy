@@ -3,8 +3,8 @@ import { Effect } from "effect";
 import type { Context as TelegrafContext, Telegraf } from "telegraf";
 
 import { registerSetQrCommand } from "./setqr.command";
-import { getDefaultLocale } from "../lang/group-locale";
-import { createMockRuntime } from "../test-utils";
+import { getDefaultLocale } from "../../lang/group-locale";
+import { createMockRuntime } from "../../test-utils";
 
 describe("setqr command", () => {
   const t = getDefaultLocale();

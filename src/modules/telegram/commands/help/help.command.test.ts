@@ -5,7 +5,7 @@ import {
   registerHelpCommand,
   TELEGRAM_COMMAND_HELP_MESSAGE,
 } from "./help.command";
-import { createMockRuntime } from "../test-utils";
+import { createMockRuntime } from "../../test-utils";
 
 describe("TELEGRAM_COMMAND_HELP_MESSAGE", () => {
   test("lists every registered command", () => {

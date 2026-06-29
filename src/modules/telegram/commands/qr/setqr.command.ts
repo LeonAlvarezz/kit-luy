@@ -2,11 +2,11 @@ import { Context, Effect, Runtime } from "effect";
 import type { Telegraf } from "telegraf";
 
 import { TelegramUserService } from "@/modules/telegram-user/telegram-user.service";
-import { getDefaultLocale } from "../lang/group-locale";
-import { IncorrectTelegramCommand } from "../telegram.error";
-import { isSettlementGroupChat } from "../telegram.utils";
-import { runTelegramCommand } from "./command-error";
-import type { TelegramDeps } from "../telegram.types";
+import { getDefaultLocale } from "../../lang/group-locale";
+import { IncorrectTelegramCommand } from "../../telegram.error";
+import { isSettlementGroupChat } from "../../telegram.utils";
+import { runTelegramCommand } from "../command-error";
+import type { TelegramDeps } from "../../telegram.types";
 import { message } from "telegraf/filters";
 
 type TelegramPhoto = {

@@ -1,15 +1,15 @@
 import { Context, Effect, Runtime } from "effect";
 import type { Telegraf } from "telegraf";
-import { runTelegramCommand } from "./command-error";
-import { parseLangCommand } from "../parsers/lang.parser";
-import { IncorrectTelegramCommand } from "../telegram.error";
-import { getLocale } from "../lang/get";
+import { runTelegramCommand } from "../command-error";
+import { parseLangCommand } from "../../parsers/lang.parser";
+import { IncorrectTelegramCommand } from "../../telegram.error";
+import { getLocale } from "../../lang/get";
 import { MemberService } from "@/modules/member/member.service";
 import { GroupService } from "@/modules/group/group.service";
 import { TelegramGroupNotFound } from "@/modules/member/member.error";
-import { isGroupContext } from "../telegram.utils";
-import { getDefaultLocale } from "../lang/group-locale";
-import type { TelegramDeps } from "../telegram.types";
+import { isGroupContext } from "../../telegram.utils";
+import { getDefaultLocale } from "../../lang/group-locale";
+import type { TelegramDeps } from "../../telegram.types";
 
 export const registerLangCommand = (
   bot: Telegraf,

@@ -1,16 +1,16 @@
 import type { Telegraf } from "telegraf";
 import { Runtime } from "effect";
 
-import { registerBuyCommand } from "./buy.command";
-import { registerHelpCommand } from "./help.command";
+import { registerBuyCommand } from "./buy/buy.command";
+import { registerHelpCommand } from "./help/help.command";
 import { registerJoinCommand } from "./join.command";
-import { registerSettleCommand } from "./settle.command";
+import { registerSettleCommand } from "./settle/settle.command";
 import { registerPaidCommand } from "./paid.command";
-import { registerListCommand } from "./list.command";
-import { registerVoidCommand } from "./void.command";
-import { registerLangCommand } from "./lang.command";
-import { registerSetQrCommand } from "./setqr.command";
-import { registerQrCommand } from "./qr.command";
+import { registerListCommand } from "./list/list.command";
+import { registerVoidCommand } from "./void/void.command";
+import { registerLangCommand } from "./lang/lang.command";
+import { registerSetQrCommand } from "./qr/setqr.command";
+import { registerQrCommand } from "./qr/qr.command";
 import { getDefaultLocale } from "../lang/group-locale";
 import type { TelegramDeps } from "../telegram.types";
 

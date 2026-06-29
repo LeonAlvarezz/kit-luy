@@ -1,8 +1,8 @@
 import type { MemberModel } from "@/modules/member/member.model";
 import type { PurchaseModel } from "@/modules/purchase/purchase.model";
 import { formatAmount } from "@/shared/currency";
-import type { TranslationFunctions } from "../lang/i18n-types";
-import { escapeHtml, formatMemberName } from "../telegram.utils";
+import type { TranslationFunctions } from "../../lang/i18n-types";
+import { escapeHtml, formatMemberName } from "../../telegram.utils";
 
 export const createMemberLookup = (members: readonly MemberModel.Entity[]) =>
   new Map(members.map((member) => [member.id, member]));

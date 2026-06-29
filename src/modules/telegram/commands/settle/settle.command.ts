@@ -5,12 +5,12 @@ import { GroupService } from "@/modules/group/group.service";
 import { MemberService } from "@/modules/member/member.service";
 import { PurchaseService } from "@/modules/purchase/purchase.service";
 import { calculateRepayments } from "@/modules/purchase/purchase.utils";
-import { runTelegramCommand } from "./command-error";
+import { runTelegramCommand } from "../command-error";
 import { createMemberLookup, formatRepayments } from "./settle.utils";
-import { IncorrectTelegramCommand } from "../telegram.error";
-import { isGroupContext } from "../telegram.utils";
-import { getDefaultLocale, getGroupLocale } from "../lang/group-locale";
-import type { TelegramDeps } from "../telegram.types";
+import { IncorrectTelegramCommand } from "../../telegram.error";
+import { isGroupContext } from "../../telegram.utils";
+import { getDefaultLocale, getGroupLocale } from "../../lang/group-locale";
+import type { TelegramDeps } from "../../telegram.types";
 
 export const registerSettleCommand = (
   bot: Telegraf,

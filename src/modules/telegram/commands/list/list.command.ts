@@ -9,16 +9,16 @@ import { PurchaseService } from "@/modules/purchase/purchase.service";
 import { formatAmount } from "@/shared/currency";
 import { Context, Effect, Runtime } from "effect";
 import { Telegraf } from "telegraf";
-import { runTelegramCommand } from "./command-error";
-import { IncorrectTelegramCommand } from "../telegram.error";
-import type { TranslationFunctions } from "../lang/i18n-types";
-import { getDefaultLocale, getGroupLocale } from "../lang/group-locale";
+import { runTelegramCommand } from "../command-error";
+import { IncorrectTelegramCommand } from "../../telegram.error";
+import type { TranslationFunctions } from "../../lang/i18n-types";
+import { getDefaultLocale, getGroupLocale } from "../../lang/group-locale";
 import {
   escapeHtml,
   formatMemberName,
   isGroupContext,
-} from "../telegram.utils";
-import type { TelegramDeps } from "../telegram.types";
+} from "../../telegram.utils";
+import type { TelegramDeps } from "../../telegram.types";
 
 const PURCHASE_LIST_LIMIT = 10;
 

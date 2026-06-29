@@ -15,13 +15,13 @@ import { PurchaseStatus } from "@/modules/purchase/purchase.model";
 import { PurchaseService } from "@/modules/purchase/purchase.service";
 import { splitEqually, toCents } from "@/modules/purchase/purchase.utils";
 import { formatBuyAllReply, type BeneficiaryAllocation } from "./buy.utils";
-import { runTelegramCommand } from "./command-error";
-import { parseBuyCommand } from "../parsers/buy.parser";
-import type { BuyAllocation } from "../parsers/buy.parser";
-import { IncorrectTelegramCommand } from "../telegram.error";
-import { isGroupContext } from "../telegram.utils";
-import { getDefaultLocale, getGroupLocale } from "../lang/group-locale";
-import type { TelegramDeps } from "../telegram.types";
+import { runTelegramCommand } from "../command-error";
+import { parseBuyCommand } from "../../parsers/buy.parser";
+import type { BuyAllocation } from "../../parsers/buy.parser";
+import { IncorrectTelegramCommand } from "../../telegram.error";
+import { isGroupContext } from "../../telegram.utils";
+import { getDefaultLocale, getGroupLocale } from "../../lang/group-locale";
+import type { TelegramDeps } from "../../telegram.types";
 
 export const registerBuyCommand = (
   bot: Telegraf,

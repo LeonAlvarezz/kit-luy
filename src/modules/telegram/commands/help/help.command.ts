@@ -3,9 +3,9 @@ import { Effect, Runtime } from "effect";
 
 import { GroupService } from "@/modules/group/group.service";
 import { MemberService } from "@/modules/member/member.service";
-import { getDefaultLocale, getGroupLocale } from "../lang/group-locale";
-import { isGroupContext } from "../telegram.utils";
-import type { TelegramDeps } from "../telegram.types";
+import { getDefaultLocale, getGroupLocale } from "../../lang/group-locale";
+import { isGroupContext } from "../../telegram.utils";
+import type { TelegramDeps } from "../../telegram.types";
 
 export const TELEGRAM_COMMAND_HELP_MESSAGE = getDefaultLocale().help.message();
 

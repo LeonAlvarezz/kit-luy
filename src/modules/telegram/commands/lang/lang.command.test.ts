@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { GROUP_LANG_ENUM } from "@/modules/group/group.model";
-import { parseLangCommand } from "../parsers/lang.parser";
+import { parseLangCommand } from "../../parsers/lang.parser";
 
 describe("parseLangCommand", () => {
   test("parses a language status command", () => {

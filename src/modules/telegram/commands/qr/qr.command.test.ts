@@ -3,8 +3,8 @@ import { Effect } from "effect";
 import type { Context as TelegrafContext, Telegraf } from "telegraf";
 
 import { registerQrCommand } from "./qr.command";
-import { getDefaultLocale } from "../lang/group-locale";
-import { createMockRuntime } from "../test-utils";
+import { getDefaultLocale } from "../../lang/group-locale";
+import { createMockRuntime } from "../../test-utils";
 
 describe("qr command", () => {
   const t = getDefaultLocale();

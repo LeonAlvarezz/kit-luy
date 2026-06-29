@@ -70,7 +70,7 @@ const createListContext = (
     },
   }) as unknown as TelegrafContext;
 
-import { createMockRuntime } from "../test-utils";
+import { createMockRuntime } from "../../test-utils";
 
 const setupListCommand = (mocks: {
   findTelegramMember?: any;

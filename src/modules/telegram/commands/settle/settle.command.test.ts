@@ -4,7 +4,7 @@ import type { Context as TelegrafContext, Telegraf } from "telegraf";
 
 import { MEMBER_STATUS, type MemberModel } from "@/modules/member/member.model";
 import { registerSettleCommand } from "./settle.command";
-import { createMockRuntime } from "../test-utils";
+import { createMockRuntime } from "../../test-utils";
 
 const createMember = (
   id: number,

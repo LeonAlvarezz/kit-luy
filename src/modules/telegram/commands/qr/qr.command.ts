@@ -4,11 +4,11 @@ import type { Telegraf } from "telegraf";
 import { GroupService } from "@/modules/group/group.service";
 import { MemberService } from "@/modules/member/member.service";
 import { TelegramUserService } from "@/modules/telegram-user/telegram-user.service";
-import { IncorrectTelegramCommand } from "../telegram.error";
-import { formatMemberName, isSettlementGroupChat } from "../telegram.utils";
-import { runTelegramCommand } from "./command-error";
-import { getDefaultLocale, getGroupLocale } from "../lang/group-locale";
-import type { TelegramDeps } from "../telegram.types";
+import { IncorrectTelegramCommand } from "../../telegram.error";
+import { formatMemberName, isSettlementGroupChat } from "../../telegram.utils";
+import { runTelegramCommand } from "../command-error";
+import { getDefaultLocale, getGroupLocale } from "../../lang/group-locale";
+import type { TelegramDeps } from "../../telegram.types";
 
 const qrCommandRegex = /^\/qr(?:@\w+)?(?:\s+(.+))?$/i;
 

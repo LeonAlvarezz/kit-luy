@@ -5,11 +5,11 @@ import { GroupService } from "@/modules/group/group.service";
 import { MemberService } from "@/modules/member/member.service";
 import { PurchaseStatus } from "@/modules/purchase/purchase.model";
 import { PurchaseService } from "@/modules/purchase/purchase.service";
-import { IncorrectTelegramCommand } from "../telegram.error";
-import { getDefaultLocale, getGroupLocale } from "../lang/group-locale";
-import { isGroupContext } from "../telegram.utils";
-import { runTelegramCommand } from "./command-error";
-import type { TelegramDeps } from "../telegram.types";
+import { IncorrectTelegramCommand } from "../../telegram.error";
+import { getDefaultLocale, getGroupLocale } from "../../lang/group-locale";
+import { isGroupContext } from "../../telegram.utils";
+import { runTelegramCommand } from "../command-error";
+import type { TelegramDeps } from "../../telegram.types";
 
 export const registerVoidCommand = (
   bot: Telegraf,
