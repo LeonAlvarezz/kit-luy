@@ -44,6 +44,9 @@ export class RepaymentClaimService extends Context.Tag("RepaymentClaimService")<
       RepaymentClaimModel.Entity,
       DbError | RepaymentClaimNotFound
     >;
+    rejectPendingByPurchaseId: (
+      purchase_id: number,
+    ) => Effect.Effect<RepaymentClaimModel.Entity[], DbError>;
   }
 >() {}
 
@@ -116,6 +119,11 @@ export const RepaymentClaimServiceLive = Layer.effect(
             return yield* Effect.fail(new RepaymentClaimNotFound({ id }));
           }
           return yield* repo.delete(id);
+        }),
+
+      rejectPendingByPurchaseId: (purchase_id) =>
+        Effect.gen(function* () {
+          return yield* repo.rejectPendingByPurchaseId(purchase_id);
         }),
     };
   }),

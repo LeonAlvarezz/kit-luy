@@ -38,6 +38,7 @@ const createRepayment = (
 ): RepaymentModel.Entity => ({
   id: 1,
   group_id: 10,
+  purchase_id: null,
   repayment_claim_id: 1,
   sender_member_id: 2,
   receiver_member_id: 1,
@@ -49,22 +50,28 @@ const createRepayment = (
 });
 
 describe("calculateSettlementBalances", () => {
-  test("does not create settlement debt from repayments when no active purchases remain", () => {
+  test("creates settlement debt from repayments when no active purchases remain", () => {
     const balances = calculateSettlementBalances({
       purchases: [],
       repayments: [createRepayment()],
     });
 
-    expect(balances).toEqual([]);
+    expect(balances).toEqual([
+      { member_id: 2, balance: 1000 },
+      { member_id: 1, balance: -1000 },
+    ]);
   });
 
-  test("clamps repayments so voided purchase debt does not invert balances", () => {
+  test("repayments larger than purchase debt flip balances", () => {
     const balances = calculateSettlementBalances({
       purchases: [createPurchase({ amount: 1000 })],
       repayments: [createRepayment({ amount_cents: 1500 })],
     });
 
-    expect(balances).toEqual([]);
+    expect(balances).toEqual([
+      { member_id: 1, balance: -500 },
+      { member_id: 2, balance: 500 },
+    ]);
   });
 
   test("applies repayments against active purchase debt", () => {

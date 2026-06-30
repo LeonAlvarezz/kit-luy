@@ -152,10 +152,8 @@ describe("setqr command", () => {
       | undefined;
     const bot = {
       command: () => {},
-      on: (event: string, handler: typeof photoHandler) => {
-        if (event === "photo") {
-          photoHandler = handler;
-        }
+      on: (_event: any, handler: typeof photoHandler) => {
+        photoHandler = handler;
       },
     } as unknown as Telegraf;
 

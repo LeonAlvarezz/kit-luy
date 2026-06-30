@@ -21,6 +21,9 @@ export class RepaymentService extends Context.Tag("RepaymentService")<
       readonly claim: RepaymentClaimModel.Entity;
       readonly confirmedByMemberId: number;
     }) => Effect.Effect<RepaymentModel.Entity, DbError>;
+    voidActiveRepaymentsByPurchaseId: (
+      purchase_id: number,
+    ) => Effect.Effect<RepaymentModel.Entity[], DbError>;
   }
 >() {}
 
@@ -36,6 +39,7 @@ export const RepaymentServiceLive = Layer.effect(
       createFromConfirmedClaim: ({ claim, confirmedByMemberId }) =>
         repo.create({
           group_id: claim.group_id,
+          purchase_id: claim.purchase_id,
           repayment_claim_id: claim.id,
           sender_member_id: claim.sender_member_id,
           receiver_member_id: claim.receiver_member_id,
@@ -43,6 +47,8 @@ export const RepaymentServiceLive = Layer.effect(
           confirmed_by_member_id: confirmedByMemberId,
           status: RepaymentStatus.ACTIVE,
         }),
+      voidActiveRepaymentsByPurchaseId: (purchase_id) =>
+        repo.voidActiveByPurchaseId(purchase_id),
     };
   }),
 ).pipe(Layer.provide(RepaymentRepositoryLive));

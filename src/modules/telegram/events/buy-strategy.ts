@@ -37,6 +37,10 @@ const memberPickerKeyboard = (
 ) => {
   const selected = new Set(payload.selectedMemberIds ?? []);
 
+  const senderMember = members.find((m) => m.id === sender.id);
+  const otherMembers = members.filter((m) => m.id !== sender.id);
+  const orderedMembers = senderMember ? [senderMember, ...otherMembers] : members;
+
   return {
     inline_keyboard: [
       [
@@ -45,7 +49,7 @@ const memberPickerKeyboard = (
           callback_data: `flow:everyone:${sessionId}`,
         },
       ],
-      ...members.map((member) => [
+      ...orderedMembers.map((member) => [
         {
           text: `${selected.has(member.id) ? "✓ " : ""}${formatPickerMemberName(
             sender,

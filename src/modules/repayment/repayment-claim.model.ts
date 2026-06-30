@@ -10,6 +10,7 @@ export namespace RepaymentClaimModel {
   export const EntitySchema = Schema.Struct({
     id: Schema.Number,
     group_id: Schema.Number,
+    purchase_id: Schema.NullOr(Schema.Number),
     sender_member_id: Schema.Number,
     receiver_member_id: Schema.Number,
     amount_cents: Schema.Number,
@@ -22,6 +23,7 @@ export namespace RepaymentClaimModel {
   export const CreateSchema = EntitySchema.pipe(
     Schema.pick(
       "group_id",
+      "purchase_id",
       "sender_member_id",
       "receiver_member_id",
       "amount_cents",

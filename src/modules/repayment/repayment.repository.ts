@@ -23,6 +23,9 @@ export class RepaymentRepository extends Context.Tag("RepaymentRepository")<
       payload: RepaymentModel.Update,
     ) => Effect.Effect<RepaymentModel.Entity, DbError>;
     delete: (id: number) => Effect.Effect<RepaymentModel.Entity, DbError>;
+    voidActiveByPurchaseId: (
+      purchase_id: number,
+    ) => Effect.Effect<RepaymentModel.Entity[], DbError>;
   }
 >() {}
 
@@ -91,6 +94,24 @@ export const RepaymentRepositoryLive = Layer.effect(
             catch: (error) => new DbError({ error }),
           });
           return result;
+        }),
+
+      voidActiveByPurchaseId: (purchase_id) =>
+        Effect.gen(function* () {
+          return yield* Effect.tryPromise({
+            try: () =>
+              db
+                .update(repaymentTable)
+                .set({ status: RepaymentStatus.VOIDED })
+                .where(
+                  and(
+                    eq(repaymentTable.purchase_id, purchase_id),
+                    eq(repaymentTable.status, RepaymentStatus.ACTIVE),
+                  ),
+                )
+                .returning(),
+            catch: (error) => new DbError({ error }),
+          });
         }),
     };
   }),

@@ -5,6 +5,8 @@ import { GroupService } from "@/modules/group/group.service";
 import { MemberService } from "@/modules/member/member.service";
 import { PurchaseStatus } from "@/modules/purchase/purchase.model";
 import { PurchaseService } from "@/modules/purchase/purchase.service";
+import { RepaymentService } from "@/modules/repayment/repayment.service";
+import { RepaymentClaimService } from "@/modules/repayment/repayment-claim.service";
 import { IncorrectTelegramCommand } from "../../telegram.error";
 import { getDefaultLocale, getGroupLocale } from "../../lang/group-locale";
 import { isGroupContext } from "../../telegram.utils";
@@ -20,6 +22,8 @@ export const registerVoidCommand = (
       const memberService = yield* MemberService;
       const groupService = yield* GroupService;
       const purchaseService = yield* PurchaseService;
+      const repaymentService = yield* RepaymentService;
+      const repaymentClaimService = yield* RepaymentClaimService;
 
       const purchaseId = parseVoidCommand(ctx.message.text);
 
@@ -81,6 +85,9 @@ export const registerVoidCommand = (
         status: PurchaseStatus.VOIDED,
         voided_at: Date.now(),
       });
+
+      yield* repaymentService.voidActiveRepaymentsByPurchaseId(purchase.id);
+      yield* repaymentClaimService.rejectPendingByPurchaseId(purchase.id);
 
       return yield* Effect.promise(() =>
         ctx.reply(t.void.voided({ purchaseId: voidedPurchase.id })),

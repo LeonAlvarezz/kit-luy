@@ -16,6 +16,7 @@ export enum TelegramConversationStatus {
 export enum ConversationStep {
   AMOUNT = "amount",
   MEMBERS = "members",
+  PURCHASE = "purchase",
   CONFIRM = "confirm",
 }
 
@@ -65,6 +66,7 @@ export namespace TelegramConversationModel {
   export const PaidConversationSchema = Schema.Struct({
     amount: Schema.optional(Schema.Number),
     receiverMemberId: Schema.optional(Schema.Number),
+    purchaseId: Schema.optional(Schema.NullOr(Schema.Number)),
   });
 
   export type Entity = Schema.Schema.Type<typeof EntitySchema>;

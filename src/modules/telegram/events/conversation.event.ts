@@ -76,7 +76,7 @@ export const registerConversationEvents = (
   });
 
   bot.action(
-    /^flow:(toggle|user|everyone|done|confirm|cancel):(\d+)(?::(\d+))?$/,
+    /^flow:(toggle|user|everyone|done|confirm|cancel|purchase):(\d+)(?::(\d+))?$/,
     async (ctx) => {
       const commandFlow = Effect.gen(function* () {
         const action = ctx.match[1];

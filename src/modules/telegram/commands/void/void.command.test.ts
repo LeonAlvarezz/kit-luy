@@ -99,6 +99,12 @@ const setupVoidCommand = (mocks: {
       findById: mocks.findPurchaseById,
       update: mocks.updatePurchase,
     },
+    repaymentService: {
+      voidActiveRepaymentsByPurchaseId: () => Effect.succeed([]),
+    },
+    repaymentClaimService: {
+      rejectPendingByPurchaseId: () => Effect.succeed([]),
+    },
   });
 
   registerVoidCommand(bot, runtime);

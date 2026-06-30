@@ -244,15 +244,14 @@ describe("registerConversationEvents", () => {
 
     expect(updatePayload).toEqual({
       step: ConversationStep.MEMBERS,
-      payload: { amount: 1200, selectedMemberIds: [] },
+      payload: { amount: 1200, selectedMemberIds: [1] },
     });
     expect(replies).toEqual(["Who shared this purchase?"]);
     const replyMarkupText = JSON.stringify(replyOptions[0]);
     expect(replyOptions[0]).toMatchObject({
       reply_markup: { inline_keyboard: expect.any(Array) },
     });
-    expect(replyMarkupText).toContain("Myself 👤");
-    expect(replyMarkupText).not.toContain("✓ Myself 👤");
+    expect(replyMarkupText).toContain("✓ Myself 👤");
   });
 
   test("invalid amount stays on amount step", async () => {

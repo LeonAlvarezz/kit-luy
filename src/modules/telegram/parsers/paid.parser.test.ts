@@ -35,6 +35,48 @@ describe("parsePaidCommand", () => {
     });
   });
 
+  it("parses an amount paid to the first settlement with purchase id", () => {
+    expect(parsePaidCommand("/paid 2 5")).toEqual({
+      ok: true,
+      command: {
+        type: "first",
+        totalAmount: 2,
+        purchaseId: 5,
+      },
+    });
+
+    expect(parsePaidCommand("/paid 2 #5")).toEqual({
+      ok: true,
+      command: {
+        type: "first",
+        totalAmount: 2,
+        purchaseId: 5,
+      },
+    });
+  });
+
+  it("parses an explicit username payment with purchase id", () => {
+    expect(parsePaidCommand("/paid @userA=10 5")).toEqual({
+      ok: true,
+      command: {
+        type: "explicit",
+        username: "userA",
+        totalAmount: 10,
+        purchaseId: 5,
+      },
+    });
+
+    expect(parsePaidCommand("/paid @userA = 10.5 #5")).toEqual({
+      ok: true,
+      command: {
+        type: "explicit",
+        username: "userA",
+        totalAmount: 10.5,
+        purchaseId: 5,
+      },
+    });
+  });
+
   it("rejects malformed paid commands", () => {
     expect(parsePaidCommand("/paid")).toEqual({
       ok: false,

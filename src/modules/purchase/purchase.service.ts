@@ -1,6 +1,7 @@
 import { DbError } from "@/core/error";
 import { Context, Effect, Layer } from "effect";
 import { PurchaseModel } from "./purchase.model";
+import type { RepaymentModel } from "../repayment/repayment.model";
 import {
   PurchaseAllocationsRequired,
   PurchaseNotFound,
@@ -20,10 +21,16 @@ export class PurchaseService extends Context.Tag("PurchaseService")<
     findAll: () => Effect.Effect<PurchaseModel.Entity[], DbError>;
     findAllByGroupId: (
       id: number,
-    ) => Effect.Effect<PurchaseModel.Entity[], DbError | PurchaseNotFound>;
+    ) => Effect.Effect<
+      PurchaseModel.EntityWithAllocation[],
+      DbError | PurchaseNotFound
+    >;
     findById: (
       id: number,
-    ) => Effect.Effect<PurchaseModel.Entity, DbError | PurchaseNotFound>;
+    ) => Effect.Effect<
+      PurchaseModel.EntityWithAllocation,
+      DbError | PurchaseNotFound
+    >;
     create: (
       payload: PurchaseModel.Create,
     ) => Effect.Effect<PurchaseModel.Entity, DbError>;
@@ -62,39 +69,7 @@ export const PurchaseServiceLive = Layer.effect(
             repo.findActivePurchaseByGroupId(group_id),
             repaymentRepo.findActiveByGroupId(group_id),
           ]);
-          const balancesByMember = new Map<number, number>();
-
-          for (const purchase of purchases) {
-            for (const allocation of purchase.allocations) {
-              balancesByMember.set(
-                purchase.payer_member_id,
-                (balancesByMember.get(purchase.payer_member_id) ?? 0) +
-                  allocation.amount,
-              );
-              balancesByMember.set(
-                allocation.responsible_member_id,
-                (balancesByMember.get(allocation.responsible_member_id) ?? 0) -
-                  allocation.amount,
-              );
-            }
-          }
-
-          for (const repayment of repayments) {
-            balancesByMember.set(
-              repayment.sender_member_id,
-              (balancesByMember.get(repayment.sender_member_id) ?? 0) +
-                repayment.amount_cents,
-            );
-            balancesByMember.set(
-              repayment.receiver_member_id,
-              (balancesByMember.get(repayment.receiver_member_id) ?? 0) -
-                repayment.amount_cents,
-            );
-          }
-
-          return [...balancesByMember.entries()]
-            .filter(([, balance]) => balance !== 0)
-            .map(([member_id, balance]) => ({ member_id, balance }));
+          return calculateSettlementBalances({ purchases, repayments });
         }),
       update: (id, payload) =>
         Effect.gen(function* () {
@@ -135,3 +110,45 @@ export const PurchaseServiceLive = Layer.effect(
   Layer.provide(PurchaseRepositoryLive),
   Layer.provide(RepaymentRepositoryLive),
 );
+
+export const calculateSettlementBalances = ({
+  purchases,
+  repayments,
+}: {
+  readonly purchases: readonly PurchaseModel.EntityWithAllocation[];
+  readonly repayments: readonly RepaymentModel.Entity[];
+}): PurchaseModel.SettlementBalance[] => {
+  const balancesByMember = new Map<number, number>();
+
+  for (const purchase of purchases) {
+    for (const allocation of purchase.allocations) {
+      balancesByMember.set(
+        purchase.payer_member_id,
+        (balancesByMember.get(purchase.payer_member_id) ?? 0) +
+          allocation.amount,
+      );
+      balancesByMember.set(
+        allocation.responsible_member_id,
+        (balancesByMember.get(allocation.responsible_member_id) ?? 0) -
+          allocation.amount,
+      );
+    }
+  }
+
+  for (const repayment of repayments) {
+    balancesByMember.set(
+      repayment.sender_member_id,
+      (balancesByMember.get(repayment.sender_member_id) ?? 0) +
+        repayment.amount_cents,
+    );
+    balancesByMember.set(
+      repayment.receiver_member_id,
+      (balancesByMember.get(repayment.receiver_member_id) ?? 0) -
+        repayment.amount_cents,
+    );
+  }
+
+  return [...balancesByMember.entries()]
+    .filter(([, balance]) => balance !== 0)
+    .map(([member_id, balance]) => ({ member_id, balance }));
+};

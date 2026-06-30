@@ -278,6 +278,22 @@ type RootTranslation = {
 		 */
 		summaryTo: string
 		/**
+		 * P​u​r​c​h​a​s​e
+		 */
+		summaryPurchase: string
+		/**
+		 * N​o​n​e​ ​(​G​e​n​e​r​a​l​ ​R​e​p​a​y​m​e​n​t​)
+		 */
+		summaryNoPurchase: string
+		/**
+		 * I​s​ ​t​h​i​s​ ​p​a​y​m​e​n​t​ ​f​o​r​ ​a​ ​s​p​e​c​i​f​i​c​ ​p​u​r​c​h​a​s​e​?
+		 */
+		askPurchase: string
+		/**
+		 * G​e​n​e​r​a​l​ ​P​a​y​m​e​n​t​ ​/​ ​N​o​t​ ​l​i​s​t​e​d
+		 */
+		generalPayment: string
+		/**
 		 * C​a​n​c​e​l
 		 */
 		cancel: string
@@ -745,6 +761,22 @@ export type TranslationFunctions = {
 		 * To
 		 */
 		summaryTo: () => LocalizedString
+		/**
+		 * Purchase
+		 */
+		summaryPurchase: () => LocalizedString
+		/**
+		 * None (General Repayment)
+		 */
+		summaryNoPurchase: () => LocalizedString
+		/**
+		 * Is this payment for a specific purchase?
+		 */
+		askPurchase: () => LocalizedString
+		/**
+		 * General Payment / Not listed
+		 */
+		generalPayment: () => LocalizedString
 		/**
 		 * Cancel
 		 */

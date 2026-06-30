@@ -86,50 +86,100 @@ export const registerPaidCommand = (
       }
 
       const { command } = result;
-
-      const targetRepayment =
-        command.type === "first"
-          ? repayments[0]
-          : yield* Effect.gen(function* () {
-              const members = yield* memberService.findActiveByGroupId(
-                sender.group_id,
-              );
-              const receiver = members.find(
-                (member) =>
-                  member.alias?.toLowerCase() ===
-                  command.username.toLowerCase(),
-              );
-
-              if (!receiver) {
-                return yield* Effect.fail(
-                  new IncorrectTelegramCommand({
-                    command: "/paid",
-                    message: t.paid.receiverNotFound({
-                      username: command.username,
-                    }),
-                  }),
-                );
-              }
-
-              const repayment = repayments.find(
-                (repayment) => repayment.toMemberId === receiver.id,
-              );
-
-              if (!repayment) {
-                return yield* Effect.fail(
-                  new IncorrectTelegramCommand({
-                    command: "/paid",
-                    message: t.paid.nothingToSettleWith({
-                      username: command.username,
-                    }),
-                  }),
-                );
-              }
-
-              return repayment;
-            });
-
       const amountCents = toCents(command.totalAmount);
+
+      let receiverId: number;
+      let purchaseId: number | null = null;
+
+      if (command.purchaseId !== undefined) {
+        const purchase = yield* purchaseService.findById(command.purchaseId);
+        if (purchase.group_id !== sender.group_id) {
+          return yield* Effect.fail(
+            new IncorrectTelegramCommand({
+              command: "/paid",
+              message: t.void.wrongGroup({ purchaseId: command.purchaseId }),
+            }),
+          );
+        }
+        // Verify sender is a beneficiary of this purchase
+        const hasAllocation = purchase.allocations.some(
+          (a) => a.responsible_member_id === sender.id,
+        );
+        if (!hasAllocation) {
+          return yield* Effect.fail(
+            new IncorrectTelegramCommand({
+              command: "/paid",
+              message: "You are not a beneficiary of this purchase.",
+            }),
+          );
+        }
+        receiverId = purchase.payer_member_id;
+        purchaseId = purchase.id;
+      } else if (command.type === "explicit") {
+        const members = yield* memberService.findActiveByGroupId(
+          sender.group_id,
+        );
+        const receiver = members.find(
+          (member) =>
+            member.alias?.toLowerCase() ===
+            command.username.toLowerCase(),
+        );
+
+        if (!receiver) {
+          return yield* Effect.fail(
+            new IncorrectTelegramCommand({
+              command: "/paid",
+              message: t.paid.receiverNotFound({
+                username: command.username,
+              }),
+            }),
+          );
+        }
+        receiverId = receiver.id;
+      } else {
+        receiverId = repayments[0].toMemberId;
+      }
+
+      // Auto-linking if not explicitly specified
+      if (purchaseId === null) {
+        const activePurchases = yield* purchaseService.findAllByGroupId(
+          sender.group_id,
+        );
+        const candidatePurchases = activePurchases.filter((p) => {
+          if (p.status !== "active") return false;
+          if (p.payer_member_id !== receiverId) return false;
+          const allocation = p.allocations.find(
+            (a) =>
+              a.responsible_member_id === sender.id &&
+              a.amount === amountCents,
+          );
+          return !!allocation;
+        });
+
+        if (candidatePurchases.length === 1) {
+          purchaseId = candidatePurchases[0].id;
+        }
+      }
+
+      const targetRepayment = repayments.find(
+        (repayment) => repayment.toMemberId === receiverId,
+      );
+
+      if (!targetRepayment) {
+        const members = yield* memberService.findActiveByGroupId(
+          sender.group_id,
+        );
+        const receiver = members.find((m) => m.id === receiverId);
+        const username = receiver?.alias || `Member #${receiverId}`;
+        return yield* Effect.fail(
+          new IncorrectTelegramCommand({
+            command: "/paid",
+            message: t.paid.nothingToSettleWith({
+              username,
+            }),
+          }),
+        );
+      }
 
       if (amountCents > targetRepayment.amount) {
         return yield* Effect.fail(
@@ -144,8 +194,9 @@ export const registerPaidCommand = (
         status: RepaymentClaimStatus.PENDING,
         amount_cents: amountCents,
         group_id: sender.group_id,
+        purchase_id: purchaseId,
         sender_member_id: sender.id,
-        receiver_member_id: targetRepayment.toMemberId,
+        receiver_member_id: receiverId,
         tg_message_id: ctx.message.message_id,
       });
 

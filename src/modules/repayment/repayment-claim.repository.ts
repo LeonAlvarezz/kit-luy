@@ -1,9 +1,9 @@
 import { Context, Effect, Layer } from "effect";
-import { RepaymentClaimModel } from "./repayment-claim.model";
+import { RepaymentClaimModel, RepaymentClaimStatus } from "./repayment-claim.model";
 import { DbError } from "@/core/error";
 import { DrizzleService } from "@/lib/db";
 import { repaymentClaimTable } from "@/lib/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 export class RepaymentClaimRepository extends Context.Tag(
   "RepaymentClaimRepository",
@@ -22,6 +22,9 @@ export class RepaymentClaimRepository extends Context.Tag(
       payload: RepaymentClaimModel.Update,
     ) => Effect.Effect<RepaymentClaimModel.Entity, DbError>;
     delete: (id: number) => Effect.Effect<RepaymentClaimModel.Entity, DbError>;
+    rejectPendingByPurchaseId: (
+      purchase_id: number,
+    ) => Effect.Effect<RepaymentClaimModel.Entity[], DbError>;
   }
 >() {}
 
@@ -80,6 +83,27 @@ export const RepaymentClaimRepositoryLive = Layer.effect(
             catch: (error) => new DbError({ error }),
           });
           return result;
+        }),
+
+      rejectPendingByPurchaseId: (purchase_id) =>
+        Effect.gen(function* () {
+          return yield* Effect.tryPromise({
+            try: () =>
+              db
+                .update(repaymentClaimTable)
+                .set({
+                  status: RepaymentClaimStatus.REJECTED,
+                  resolved_at: sql`CURRENT_TIMESTAMP`,
+                })
+                .where(
+                  and(
+                    eq(repaymentClaimTable.purchase_id, purchase_id),
+                    eq(repaymentClaimTable.status, RepaymentClaimStatus.PENDING),
+                  ),
+                )
+                .returning(),
+            catch: (error) => new DbError({ error }),
+          });
         }),
     };
   }),

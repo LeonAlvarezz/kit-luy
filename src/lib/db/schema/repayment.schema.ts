@@ -5,12 +5,14 @@ import { groupTable } from "./group.schema";
 import { memberTable } from "./member.schema";
 import { repaymentClaimTable } from "./repayment-claim.schema";
 import { RepaymentStatus } from "@/modules/repayment/repayment.model";
+import { purchaseTable } from "./purchase.schema";
 
 export const repaymentTable = sqliteTable("repayments", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   group_id: integer("group_id")
     .notNull()
     .references(() => groupTable.id),
+  purchase_id: integer("purchase_id").references(() => purchaseTable.id),
   repayment_claim_id: integer("repayment_claim_id").references(
     () => repaymentClaimTable.id,
   ),
@@ -36,6 +38,10 @@ export const repaymentRelations = relations(repaymentTable, ({ one }) => ({
   group: one(groupTable, {
     fields: [repaymentTable.group_id],
     references: [groupTable.id],
+  }),
+  purchase: one(purchaseTable, {
+    fields: [repaymentTable.purchase_id],
+    references: [purchaseTable.id],
   }),
   repayment_claim: one(repaymentClaimTable, {
     fields: [repaymentTable.repayment_claim_id],
