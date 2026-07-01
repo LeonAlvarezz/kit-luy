@@ -148,7 +148,7 @@ describe("registerBuyCommand", () => {
     await buyHandler?.(createBuyContext("/buy", 1001, replies, replyOptions));
 
     expect(started).toBe(true);
-    expect(replies).toEqual(["How much did you pay?"]);
+    expect(replies).toEqual(["How much did you pay? (e.g. 5 or 20000R)"]);
     expect(replyOptions[0]).toMatchObject({
       reply_markup: { force_reply: true, selective: true },
     });

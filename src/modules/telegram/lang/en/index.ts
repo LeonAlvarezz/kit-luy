@@ -49,7 +49,7 @@ const en = {
     beneficiaryLine:
       "   - {member:string}\t\t\t\t\t<code>${amount:string}</code>",
     validAmount: "Please send a valid amount greater than 0.",
-    askAmount: "How much did you pay?",
+    askAmount: "How much did you pay? (e.g. 5 or 20000R)",
     askMembers: "Who shared this purchase?",
     memberPickerEveryone: "Everyone",
     memberPickerDone: "Done",
@@ -69,7 +69,7 @@ const en = {
     validAmount: "Please send a valid amount greater than 0.",
     noOtherActiveMembers:
       "There are no other active members in this settlement group.",
-    askAmount: "How much did you pay?",
+    askAmount: "How much did you pay? (e.g. 5 or 20000R)",
     askReceiver: "Who do you want to pay to?",
     nothingToSettle: "You don't have anything to settle.",
     receiverNotFound: "Could not find @{username:string} in this group.",

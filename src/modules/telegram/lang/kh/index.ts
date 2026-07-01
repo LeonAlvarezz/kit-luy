@@ -47,7 +47,7 @@ const kh = {
     beneficiaryLine:
       "   - {member:string}\t\t\t\t\t<code>${amount:string}</code>",
     validAmount: "សូមផ្ញើចំនួនទឹកប្រាក់ត្រឹមត្រូវដែលធំជាង 0",
-    askAmount: "តើអ្នកបានបង់ប៉ុន្មាន?",
+    askAmount: "តើអ្នកបានបង់ប៉ុន្មាន? (ឧទាហរណ៍៖ 5 ឬ 20000R)",
     askMembers: "តើអ្នកណាខ្លះបានចូលរួមការទិញនេះ?",
     memberPickerEveryone: "គ្រប់គ្នា",
     memberPickerDone: "រួចរាល់",
@@ -66,7 +66,7 @@ const kh = {
     usage: "សូមប្រើ /paid 2 ឬ /paid @userA=10",
     validAmount: "សូមផ្ញើចំនួនទឹកប្រាក់ត្រឹមត្រូវដែលធំជាង 0",
     noOtherActiveMembers: "មិនមានសមាជិកផ្សេងទៀតនៅក្នុងគ្រុបទូទាត់នេះទេ",
-    askAmount: "តើអ្នកបានបង់ប៉ុន្មាន?",
+    askAmount: "តើអ្នកបានបង់ប៉ុន្មាន? (ឧទាហរណ៍៖ 5 ឬ 20000R)",
     askReceiver: "តើអ្នកចង់បង់ទៅអ្នកណា?",
     nothingToSettle: "អ្នកមិនមានអ្វីត្រូវទូទាត់ទេ",
     receiverNotFound: "រកមិនឃើញ @{username:string} ក្នុងគ្រុបនេះទេ",
