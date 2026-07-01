@@ -49,7 +49,7 @@ const en = {
     beneficiaryLine:
       "   - {member:string}\t\t\t\t\t<code>${amount:string}</code>",
     validAmount: "Please send a valid amount greater than 0.",
-    askAmount: "How much did you pay? (e.g. 5 or 20000R)",
+    askAmount: "How much did you pay? (e.g. 5 or 20000R or 20000r)",
     askMembers: "Who shared this purchase?",
     memberPickerEveryone: "Everyone",
     memberPickerDone: "Done",

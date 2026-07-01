@@ -66,7 +66,7 @@ const kh = {
     usage: "សូមប្រើ /paid 2 ឬ /paid @userA=10",
     validAmount: "សូមផ្ញើចំនួនទឹកប្រាក់ត្រឹមត្រូវដែលធំជាង 0",
     noOtherActiveMembers: "មិនមានសមាជិកផ្សេងទៀតនៅក្នុងគ្រុបទូទាត់នេះទេ",
-    askAmount: "តើអ្នកបានបង់ប៉ុន្មាន? (ឧទាហរណ៍៖ 5 ឬ 20000R)",
+    askAmount: "តើអ្នកបានបង់ប៉ុន្មាន? (ឧទាហរណ៍៖ 5 ឬ 20000R ឬ 20000r)",
     askReceiver: "តើអ្នកចង់បង់ទៅអ្នកណា?",
     nothingToSettle: "អ្នកមិនមានអ្វីត្រូវទូទាត់ទេ",
     receiverNotFound: "រកមិនឃើញ @{username:string} ក្នុងគ្រុបនេះទេ",
