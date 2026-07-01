@@ -11,7 +11,7 @@ import {
   TelegramConversationRepositoryLive,
 } from "./telegram-conversation.repository";
 
-const SESSION_TTL_MS = 30 * 60 * 1000;
+const SESSION_TTL_MS = 5 * 60 * 1000;
 
 export class TelegramConversationService extends Context.Tag(
   "TelegramConversationService",

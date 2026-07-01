@@ -41,6 +41,8 @@
 - 2026-06-30T10:51:00+07:00 [CODE] Modified buy-strategy.ts to place senderMember first in orderedMembers array to show 'Myself' on top.
 - 2026-07-01T11:55:00+07:00 [CODE] Modified paid-strategy.ts to remove ConversationStep.PURCHASE transition; modified paid.command.ts to remove simple single-candidate checks; implemented split-and-link logic in repayment.service.ts; created repayment.service.test.ts to verify correct splitting behavior.
 - 2026-07-01T11:56:00+07:00 [CODE] Split RepaymentServiceLive into RepaymentServiceLiveImpl and RepaymentServiceLive to allow testing without requiring DrizzleService.
+- 2026-07-01T12:00:00+07:00 [CODE] Added CLOUDFLARE_API_TOKEN to .env and updated drizzle.config.ts to resolve Wrangler CLI D1 Remote migration authentication issue.
+- 2026-07-01T12:03:00+07:00 [CODE] Reduced session TTL constant SESSION_TTL_MS from 30 minutes to 5 minutes.
 
 ## [DISCOVERIES]
 - 2026-06-28T17:03:29+07:00 [TOOL] `bun test` still has unrelated existing failures in Khmer locale punctuation, list formatting, and settle formatting snapshots; focused buy flow tests pass.
@@ -57,6 +59,7 @@
 - 2026-06-29T18:04:12+07:00 [TOOL] Guided `/buy` allocation fix verified with `bun test src/modules/telegram/events/buy-conversation.event.test.ts src/modules/telegram/commands/buy/buy.command.test.ts` (18 pass, 0 fail), `bunx tsc --noEmit`, and `git diff --check`.
 - 2026-06-30T03:47:00Z [TOOL] All 63 tests compile and pass cleanly; typesafe-i18n generated updated locales.
 - 2026-07-01T11:56:00+07:00 [TOOL] Fixed DrizzleService requirement error in repayment.service.test.ts by using RepaymentServiceLiveImpl in tests instead of the fully closed RepaymentServiceLive.
+- 2026-07-01T12:00:00+07:00 [TOOL] Wrangler CLI requires CLOUDFLARE_API_TOKEN to authenticate D1 Remote migrations; CLOUDFLARE_D1_TOKEN is only used by Drizzle.
 
 ## [OUTCOMES]
 - 2026-06-28T17:03:29+07:00 [CODE] `/buy` can now start a persisted group wizard; old advanced `/buy <amount> ...` parser path remains available.
@@ -65,3 +68,5 @@
 - 2026-06-30T03:47:00Z [CODE] Purchase-repayment linking fully implemented, tested, and verified. All 63 tests pass and `bunx tsc --noEmit` runs with zero errors.
 - 2026-07-01T11:55:00+07:00 [CODE] Removed manual purchase selection step from interactive /paid flow. Claims are automatically split and linked to active purchases upon confirmation. All 65 tests pass cleanly and typecheck has zero errors.
 - 2026-07-01T11:56:00+07:00 [CODE] Successfully fixed repayment.service.test.ts errors and verified test suite with 65 passing tests and clean type checks.
+- 2026-07-01T12:00:00+07:00 [CODE] Fixed remote Cloudflare D1 migrations authentication. Executed prod migration script successfully.
+- 2026-07-01T12:03:00+07:00 [CODE] Successfully configured conversation sessions to expire after 5 minutes; all tests passed.
