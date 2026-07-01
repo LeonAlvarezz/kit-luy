@@ -140,26 +140,7 @@ export const registerPaidCommand = (
         receiverId = repayments[0].toMemberId;
       }
 
-      // Auto-linking if not explicitly specified
-      if (purchaseId === null) {
-        const activePurchases = yield* purchaseService.findAllByGroupId(
-          sender.group_id,
-        );
-        const candidatePurchases = activePurchases.filter((p) => {
-          if (p.status !== "active") return false;
-          if (p.payer_member_id !== receiverId) return false;
-          const allocation = p.allocations.find(
-            (a) =>
-              a.responsible_member_id === sender.id &&
-              a.amount === amountCents,
-          );
-          return !!allocation;
-        });
 
-        if (candidatePurchases.length === 1) {
-          purchaseId = candidatePurchases[0].id;
-        }
-      }
 
       const targetRepayment = repayments.find(
         (repayment) => repayment.toMemberId === receiverId,

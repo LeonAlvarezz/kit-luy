@@ -20,7 +20,6 @@ import { RepaymentClaimStatus } from "@/modules/repayment/repayment-claim.model"
 import { getGroupLocale } from "../lang/group-locale";
 import type { TranslationFunctions } from "../lang/i18n-types";
 import { GroupService } from "@/modules/group/group.service";
-import { PurchaseService } from "@/modules/purchase/purchase.service";
 
 export const constructKeyboard = (
   sessionId: number,
@@ -141,63 +140,6 @@ export const paidStrategy: ConversationStrategy = {
           return;
         }
 
-        const purchaseService = yield* PurchaseService;
-        const activePurchases = yield* purchaseService.findAllByGroupId(
-          sender.group_id,
-        );
-        const userActivePurchases = activePurchases.filter((p) => {
-          if (p.status !== "active") return false;
-          if (p.payer_member_id !== receiver.id) return false;
-          const allocation = p.allocations.find(
-            (a) => a.responsible_member_id === sender.id,
-          );
-          return !!allocation;
-        });
-
-        if (userActivePurchases.length > 0) {
-          yield* telegramConversationService.updateSession(session.id, {
-            step: ConversationStep.PURCHASE,
-            payload: {
-              ...payload,
-              receiverMemberId: receiver.id,
-            },
-          });
-
-          const inline_keyboard = [
-            ...userActivePurchases.map((p) => {
-              const allocation = p.allocations.find(
-                (a) => a.responsible_member_id === sender.id,
-              )!;
-              const label = `${p.note || "Purchase"} (${formatAmount(allocation.amount)})`;
-              return [
-                {
-                  text: label,
-                  callback_data: `flow:purchase:${session.id}:${p.id}`,
-                },
-              ];
-            }),
-            [
-              {
-                text: t.paid.generalPayment(),
-                callback_data: `flow:purchase:${session.id}:0`,
-              },
-            ],
-            [
-              {
-                text: t.paid.cancel(),
-                callback_data: `flow:cancel:${session.id}`,
-              },
-            ],
-          ];
-
-          yield* Effect.promise(() => ctx.answerCbQuery());
-          return yield* Effect.promise(() =>
-            ctx.editMessageText(t.paid.askPurchase(), {
-              reply_markup: { inline_keyboard },
-            }),
-          );
-        }
-
         yield* telegramConversationService.updateSession(session.id, {
           step: ConversationStep.CONFIRM,
           payload: {
@@ -215,49 +157,7 @@ export const paidStrategy: ConversationStrategy = {
         );
       }
 
-      if (action === "purchase" && targetMemberId !== undefined) {
-        const members = yield* memberService.findActiveByGroupId(
-          sender.group_id,
-        );
-        const receiver = members.find(
-          (member) => member.id === payload.receiverMemberId,
-        );
-        const totalAmount = payload.amount;
-
-        if (!receiver || !totalAmount) {
-          yield* Effect.promise(() =>
-            ctx.answerCbQuery(t.paid.incompleteFlow()),
-          );
-          return;
-        }
-
-        const purchaseId = targetMemberId === 0 ? null : targetMemberId;
-        let purchaseNote: string | null = null;
-        if (purchaseId !== null) {
-          const purchaseService = yield* PurchaseService;
-          const purchase = yield* purchaseService.findById(purchaseId);
-          purchaseNote = `#${purchase.id} - ${purchase.note || "Purchase"}`;
-        }
-
-        yield* telegramConversationService.updateSession(session.id, {
-          step: ConversationStep.CONFIRM,
-          payload: {
-            ...payload,
-            purchaseId,
-          },
-        });
-
-        yield* Effect.promise(() => ctx.answerCbQuery());
-        return yield* Effect.promise(() =>
-          ctx.editMessageText(
-            formatSummary(t, sender, receiver, totalAmount, purchaseNote),
-            {
-              parse_mode: "HTML",
-              reply_markup: constructConfirmKeyboard(session.id, t),
-            },
-          ),
-        );
-      }
+      // Purchase action removed to bypass manual selection
 
       if (action === "confirm") {
         const members = yield* memberService.findActiveByGroupId(
