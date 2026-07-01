@@ -30,11 +30,24 @@ export const escapeHtml = (value: string) =>
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;");
 
+export const convertRielToUsd = (text: string): string => {
+  const rielRegex = /(?<!\w|@)((?:\d+(?:\.\d+)?)|(?:\.\d+))\s*(?:r|riel|riels)\b/gi;
+  return text.replace(rielRegex, (_, amountStr) => {
+    const amount = Number(amountStr);
+    const usdAmount = amount / 4000;
+    return String(usdAmount);
+  });
+};
+
 export const parseAmount = (ctx: Context) => {
   const text =
     ctx.message && "text" in ctx.message ? ctx.message.text : undefined;
+  if (!text) {
+    return null;
+  }
 
-  const value = Number(text?.trim());
+  const convertedText = convertRielToUsd(text);
+  const value = Number(convertedText.trim());
   if (!Number.isFinite(value) || value <= 0) {
     return null;
   }

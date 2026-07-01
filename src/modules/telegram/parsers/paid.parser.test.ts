@@ -88,4 +88,33 @@ describe("parsePaidCommand", () => {
       reason: "usage",
     });
   });
+
+  it("parses Khmer Riel amount and converts it to USD", () => {
+    expect(parsePaidCommand("/paid 2000R")).toEqual({
+      ok: true,
+      command: {
+        type: "first",
+        totalAmount: 0.5,
+      },
+    });
+
+    expect(parsePaidCommand("/paid @userA=4000 r")).toEqual({
+      ok: true,
+      command: {
+        type: "explicit",
+        username: "userA",
+        totalAmount: 1,
+      },
+    });
+
+    expect(parsePaidCommand("/paid @userA = 8000 riels #5")).toEqual({
+      ok: true,
+      command: {
+        type: "explicit",
+        username: "userA",
+        totalAmount: 2,
+        purchaseId: 5,
+      },
+    });
+  });
 });

@@ -1,3 +1,5 @@
+import { convertRielToUsd } from "../telegram.utils";
+
 const amountPattern = "((?:\\d+(?:\\.\\d+)?)|(?:\\.\\d+))";
 const purchaseIdPattern = "(?:\\s+#?(\\d+))?";
 const paidCommandRegex = /^\/paid(?:@\w+)?\s+(.+)$/i;
@@ -30,7 +32,8 @@ export type PaidCommandParseResult =
     };
 
 export const parsePaidCommand = (text: string): PaidCommandParseResult => {
-  const paidMatch = text.match(paidCommandRegex);
+  const convertedText = convertRielToUsd(text);
+  const paidMatch = convertedText.match(paidCommandRegex);
 
   if (!paidMatch) {
     return {

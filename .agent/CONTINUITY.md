@@ -6,6 +6,7 @@
 - 2026-06-29T14:45:00Z [USER] Refactor Telegram conversation flows to a generic Strategy pattern to allow clean reuse for future conversation flows (like /paid).
 - 2026-06-30T03:47:00Z [USER] Link repayments and repayment claims to specific purchases. Automatically void linked repayments and reject pending claims when a purchase is voided.
 - 2026-07-01T11:50:00+07:00 [USER] Reverse manual purchase selection step in interactive /paid flow; implement auto-splitting/linking of repayments to active purchases at confirmation.
+- 2026-07-01T13:11:33+07:00 [USER] Support Khmer Riel (KHR) inputs by automatically converting them to USD (1 USD = 4000 KHR).
 
 
 ## [DECISIONS]
@@ -19,6 +20,7 @@
 - 2026-06-30T03:47:00Z [CODE] Removed repayment balance clamping; repayment amount can exceed purchase debt to support balance flipping (e.g. partial repayments or general repayments).
 - 2026-06-30T10:51:00+07:00 [CODE] Pre-ordered buy flow member picker lists the sender ('Myself') on top right below the 'Everyone' option.
 - 2026-07-01T11:55:00+07:00 [CODE] Bypassed manual purchase selection in the interactive paid flow; when a payment claim is confirmed, the repayment is automatically split and linked across the sender's active purchases to the receiver from oldest to newest.
+- 2026-07-01T13:11:33+07:00 [CODE] Implement automatic Khmer Riel to USD conversion via a preprocessing helper `convertRielToUsd` before command text parsing in /buy, /paid, and interactive flows.
 
 ## [PROGRESS]
 - 2026-06-28T17:03:29+07:00 [CODE] Added Telegram conversation model/repository/service, buy text/callback event handlers, `/cancel`, `/buy` session start, help copy, migration `0005_talented_glorian.sql`, and focused tests.
@@ -43,6 +45,7 @@
 - 2026-07-01T11:56:00+07:00 [CODE] Split RepaymentServiceLive into RepaymentServiceLiveImpl and RepaymentServiceLive to allow testing without requiring DrizzleService.
 - 2026-07-01T12:00:00+07:00 [CODE] Added CLOUDFLARE_API_TOKEN to .env and updated drizzle.config.ts to resolve Wrangler CLI D1 Remote migration authentication issue.
 - 2026-07-01T12:03:00+07:00 [CODE] Reduced session TTL constant SESSION_TTL_MS from 30 minutes to 5 minutes.
+- 2026-07-01T13:11:33+07:00 [CODE] Added `convertRielToUsd` helper to `telegram.utils.ts` and updated parsers. Added comprehensive unit tests in `telegram.utils.test.ts`, `buy.parser.test.ts`, and `paid.parser.test.ts`.
 
 ## [DISCOVERIES]
 - 2026-06-28T17:03:29+07:00 [TOOL] `bun test` still has unrelated existing failures in Khmer locale punctuation, list formatting, and settle formatting snapshots; focused buy flow tests pass.
@@ -70,3 +73,5 @@
 - 2026-07-01T11:56:00+07:00 [CODE] Successfully fixed repayment.service.test.ts errors and verified test suite with 65 passing tests and clean type checks.
 - 2026-07-01T12:00:00+07:00 [CODE] Fixed remote Cloudflare D1 migrations authentication. Executed prod migration script successfully.
 - 2026-07-01T12:03:00+07:00 [CODE] Successfully configured conversation sessions to expire after 5 minutes; all tests passed.
+- 2026-07-01T13:11:33+07:00 [CODE] Added `convertRielToUsd` helper to `telegram.utils.ts` and updated parsers. Added comprehensive unit tests in `telegram.utils.test.ts`, `buy.parser.test.ts`, and `paid.parser.test.ts`.
+- 2026-07-01T13:11:33+07:00 [CODE] Khmer Riel input parsing fully implemented, tested, and verified. All 72 tests pass with zero type errors.

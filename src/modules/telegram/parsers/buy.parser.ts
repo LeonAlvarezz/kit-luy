@@ -1,4 +1,5 @@
 import { regex } from "./regex";
+import { convertRielToUsd } from "../telegram.utils";
 
 export type BuyAllocationValue =
   | {
@@ -40,7 +41,8 @@ export type BuyCommandParseResult =
       readonly reason: "usage" | "allocationUsage";
     };
 export const parseBuyCommand = (text: string): BuyCommandParseResult => {
-  const buyMatch = text.match(regex.buy);
+  const convertedText = convertRielToUsd(text);
+  const buyMatch = convertedText.match(regex.buy);
 
   if (!buyMatch) {
     return {

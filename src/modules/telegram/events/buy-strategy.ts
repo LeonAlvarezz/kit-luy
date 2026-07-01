@@ -39,7 +39,9 @@ const memberPickerKeyboard = (
 
   const senderMember = members.find((m) => m.id === sender.id);
   const otherMembers = members.filter((m) => m.id !== sender.id);
-  const orderedMembers = senderMember ? [senderMember, ...otherMembers] : members;
+  const orderedMembers = senderMember
+    ? [senderMember, ...otherMembers]
+    : members;
 
   return {
     inline_keyboard: [
@@ -114,12 +116,12 @@ const formatSummary = (
   totalAmount: number,
   beneficiaryAllocations: readonly BeneficiaryAllocation[],
 ) =>
-  `${t.buy.summaryHeader()}\n\n${t.buy.summaryTotal()}: <code>${formatAmount(totalAmount)}</code>\n${t.buy.summaryPaidBy()}: <b>${escapeHtml(
+  `${t.buy.summaryHeader()}\n\n${t.buy.summaryTotal()}: <code>$${formatAmount(totalAmount)}</code>\n${t.buy.summaryPaidBy()}: <b>${escapeHtml(
     formatMemberName(sender),
   )}</b>\n\n${t.buy.beneficiaries()}\n${beneficiaryAllocations
     .map(
       ({ member, allocation }) =>
-        `   - ${escapeHtml(formatMemberName(member))}\t\t\t\t\t<code>${formatAmount(
+        `   - ${escapeHtml(formatMemberName(member))}\t\t\t\t\t<code>$${formatAmount(
           allocation.amount,
         )}</code>`,
     )
